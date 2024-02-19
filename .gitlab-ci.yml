@@ -42,8 +42,8 @@ include:
     - echo "$DIR_PATH - Build is DONE!";
     - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
     - echo "$TRIVY_SERVER - $TRIVY_VERSION";
-    - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity HIGH --token $TRIVY_TOKEN 
-    - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 1 --severity HIGH --token $TRIVY_TOKEN     
+    - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity HIGH --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH
+    - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 1 --severity HIGH --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH
     - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
     - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
     - docker push $DOCKER_REG_URL/$IMAGE_PATH
