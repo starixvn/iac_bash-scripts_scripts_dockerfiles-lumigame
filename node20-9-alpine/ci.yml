@@ -1,0 +1,18 @@
+.node20-9-alpine:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "node20-9-alpine/**/*"
+    DIR_PATH: "node20-9-alpine"
+    IMAGE_VERSION: "20.9.0-alpine"
+    IMAGE_TAG: "20.9.0-alpine"
+    BASE_IMAGE: "node:$IMAGE_TAG"
+    IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+node20-9-alpine-test:
+  extends: [.node20-9-alpine, .test]
+
+node20-9-alpine-build:
+  extends: [.node20-9-alpine, .build]
+  needs: ["node20-9-alpine-test"]
+

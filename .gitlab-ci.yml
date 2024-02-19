@@ -1,0 +1,64 @@
+stages:
+  - test
+  - build
+  - deploy
+############
+include:
+  - local: "base.yml"
+  - local: "**/ci.yml"
+  
+###########
+.general-script:
+  docker-login:
+    - docker login -u $docker_reg_user -p $docker_reg_pass $docker_reg_url
+#    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
+
+.base-rules:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes: 
+        - $RULES_CHANGES_PATH
+.test:
+  stage: test
+  script:
+    - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
+    - cat $DIR_PATH/Dockerfile
+    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
+    - ./trivy config --exit-code 0 --severity HIGH $DIR_PATH/
+    - ./trivy config --exit-code 1 --severity CRITICAL $DIR_PATH/
+    - echo "done Scan Dockerfile !"
+  tags:
+    - docker
+
+.build:
+  stage: build
+  script:
+    - !reference [.general-script, docker-login]
+    - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
+    - wget -O .trivyignore https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivyignore?inline=false
+    - echo "build - $DIR_PATH"
+    - echo "docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH ."
+    - docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH .
+    - echo "$DIR_PATH - Build is DONE!";
+    - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
+    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
+    - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity HIGH --token $TRIVY_TOKEN 
+    - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 1 --severity HIGH --token $TRIVY_TOKEN     
+    - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
+    - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
+    - docker push $DOCKER_REG_URL/$IMAGE_PATH
+    - echo "$DOCKER_REG_URL/$IMAGE_PATH - Push is DONE!";
+  #allow_failure: true
+  tags:
+    - docker
+    # - testlab-runner
+
+# .deploy:
+#   stage: deploy
+#   script:
+#     - !reference [.general-script, docker-login]
+#     - echo "Push - hub.nexdev.net/$IMAGE_PATH"
+#     - docker push hub.nexdev.net/$IMAGE_PATH
+#     - echo "hub.nexdev.net/$IMAGE_PATH - deploy is DONE!";
+#   tags:
+#     - testlab-runner 
