@@ -1,0 +1,17 @@
+.dotnetcore-70-alpine:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "dotnet-core-7.0-alpine/**/*"
+    DIR_PATH: "dotnet-core-7.0-alpine"
+    IMAGE_VERSION: "7.0-alpine"
+    IMAGE_TAG: "7.0-alpine"
+    BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:$IMAGE_TAG"
+    IMAGE_PATH: "rebuild-baseimage/dotnet/core/aspnet:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+dotnetcore-70-alpine-test:
+  extends: [.dotnetcore-70-alpine, .test]
+
+dotnetcore-70-alpine-build:
+  extends: [.dotnetcore-70-alpine, .build]
+  needs: ["dotnetcore-70-alpine-test"]
