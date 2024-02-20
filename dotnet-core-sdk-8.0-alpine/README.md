@@ -1,3 +1,3 @@
-# ASP.NET Core Runtime 
+# SDK Core Runtime 
 # Version 8.0
 
