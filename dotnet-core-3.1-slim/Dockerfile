@@ -1,6 +1,6 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
-#LABEL maintainer=NexOps
+LABEL maintainer=NexOps
 RUN apt-get update && apt-get install -y --no-install-recommends  \
     iputils-ping wget tcptraceroute bc tzdata curl telnet \
     libcurl4=7.64.0-4+deb10u8 libgnutls30=3.6.7-4+deb10u11 \
