@@ -4,7 +4,7 @@
     RULES_CHANGES_PATH: "node14-16-alpine/**/*"
     DIR_PATH: "node14-16-alpine"
     IMAGE_VERSION: "14.16-alpine"
-    IMAGE_TAG: "14.16-alpine"
+    IMAGE_TAG: "14.16-alpine3.13"
     BASE_IMAGE: "node:$IMAGE_TAG"
     IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
     # IMAGE_PATH: "base/node:$IMAGE_VERSION"
