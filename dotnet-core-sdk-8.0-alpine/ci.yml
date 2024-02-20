@@ -15,4 +15,3 @@ dotnetcoresdk80-alpine-test:
 dotnetcoresdk80-alpine-build:
   extends: [.dotnetcoresdk80-alpine, .build]
   needs: ["dotnetcoresdk80-alpine-test"]
-
