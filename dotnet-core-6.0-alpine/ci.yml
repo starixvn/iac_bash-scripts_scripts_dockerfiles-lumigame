@@ -1,0 +1,18 @@
+.dotnetcore-60-alpine:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "dotnet-core-6.0-alpine/**/*"
+    DIR_PATH: "dotnet-core-6.0-alpine"
+    IMAGE_VERSION: "6.0-alpine"
+    IMAGE_TAG: "6.0-alpine"
+    BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:$IMAGE_TAG"
+    IMAGE_PATH: "rebuild-baseimage/dotnet/core/aspnet:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+dotnetcore-60-alpine-test:
+  extends: [.dotnetcore-60-alpine, .test]
+
+dotnetcore-60-alpine-build:
+  extends: [.dotnetcore-60-alpine, .build]
+  needs: ["dotnetcore-60-alpine-test"]
+
