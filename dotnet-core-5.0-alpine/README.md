@@ -1,2 +1,2 @@
 # ASP.NET Core Runtime
-# Version 6.0-alpine (EOL)
+# Version 5.0-alpine (EOL)
