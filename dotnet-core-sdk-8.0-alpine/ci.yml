@@ -5,7 +5,7 @@
     DIR_PATH: "dotnet-core-sdk-8.0-alpine"
     IMAGE_VERSION: "8.0-alpine"
     IMAGE_TAG: "8.0-alpine"
-    BASE_IMAGE: "dotnet/core/sdk:$IMAGE_TAG"
+    BASE_IMAGE: "base/dotnet/core/sdk:$IMAGE_TAG"
     # IMAGE_PATH: "base/dotnet/core/sdk:$IMAGE_VERSION"
     IMAGE_PATH: "rebuild-baseimage/dotnet/sdk:$IMAGE_VERSION"
 
