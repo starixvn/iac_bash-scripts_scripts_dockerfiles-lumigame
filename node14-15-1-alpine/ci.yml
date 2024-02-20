@@ -1,0 +1,18 @@
+.node14-15-1-alpine:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "node14-15-1-alpine/**/*"
+    DIR_PATH: "node14-15-1-alpine"
+    IMAGE_VERSION: "14.15.1-alpine"
+    IMAGE_TAG: "14.15.1-alpine3.13"
+    BASE_IMAGE: "node:$IMAGE_TAG"
+    IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+node14-15-1-alpine-test:
+  extends: [.node14-15-1-alpine, .test]
+
+node14-15-1-alpine-build:
+  extends: [.node14-15-1-alpine, .build]
+  needs: ["node14-15-1-alpine-test"]
+
