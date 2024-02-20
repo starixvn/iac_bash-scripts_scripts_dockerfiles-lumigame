@@ -1,3 +1,2 @@
-# NodeJS
-# Version 20.9.0 Alpine
-
+# ASP.NET Core Runtime
+# Version 6.0-alpine (EOL)
