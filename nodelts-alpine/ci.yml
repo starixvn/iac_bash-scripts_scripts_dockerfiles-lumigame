@@ -1,0 +1,18 @@
+.nodelts-alpine:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "nodelts-alpine/**/*"
+    DIR_PATH: "nodelts-alpine"
+    IMAGE_VERSION: "lts-alpine"
+    IMAGE_TAG: "lts-alpine3.19"
+    BASE_IMAGE: "node:$IMAGE_TAG"
+    IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+nodelts-alpine-test:
+  extends: [.nodelts-alpine, .test]
+
+nodelts-alpine-build:
+  extends: [.nodelts-alpine, .build]
+  needs: ["nodelts-alpine-test"]
+
