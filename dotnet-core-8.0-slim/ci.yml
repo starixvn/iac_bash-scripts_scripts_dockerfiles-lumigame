@@ -1,0 +1,17 @@
+.dotnetcore-80-slim:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "dotnet-core-8.0-slim/**/*"
+    DIR_PATH: "dotnet-core-8.0-slim"
+    IMAGE_VERSION: "8.0-slim-24h1.1"
+    IMAGE_TAG: "8.0-bookworm-slim"
+    BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:$IMAGE_TAG"
+    IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+dotnetcore-80-slim-test:
+  extends: [.dotnetcore-80-slim, .test]
+
+dotnetcore-80-slim-build:
+  extends: [.dotnetcore-80-slim, .build]
+  needs: ["dotnetcore-80-slim-test"]

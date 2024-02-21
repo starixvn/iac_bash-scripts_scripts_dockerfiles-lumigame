@@ -1,0 +1,17 @@
+.dotnetcore-80-alpine:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "dotnet-core-8.0-alpine/**/*"
+    DIR_PATH: "dotnet-core-8.0-alpine"
+    IMAGE_VERSION: "8.0-alpine-24h1.1"
+    IMAGE_TAG: "8.0-alpine"
+    BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:$IMAGE_TAG"
+    IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+dotnetcore-80-alpine-test:
+  extends: [.dotnetcore-80-alpine, .test]
+
+dotnetcore-80-alpine-build:
+  extends: [.dotnetcore-80-alpine, .build]
+  needs: ["dotnetcore-80-alpine-test"]
