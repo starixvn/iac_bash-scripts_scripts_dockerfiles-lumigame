@@ -6,8 +6,8 @@
     IMAGE_VERSION: "14.16-alpine"
     IMAGE_TAG: "14.16-alpine3.13"
     BASE_IMAGE: "node:$IMAGE_TAG"
-    IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
-    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+    # IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
+    IMAGE_PATH: "base/node:$IMAGE_VERSION-24h1.1"
 
 node14-16-alpine-test:
   extends: [.node14-16-alpine, .test]

@@ -6,8 +6,8 @@
     IMAGE_VERSION: "lts-alpine"
     IMAGE_TAG: "lts-alpine3.19"
     BASE_IMAGE: "node:$IMAGE_TAG"
-    IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
-    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+    # IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
+    IMAGE_PATH: "base/node:$IMAGE_VERSION-24h1.1"
 
 nodelts-alpine-test:
   extends: [.nodelts-alpine, .test]
