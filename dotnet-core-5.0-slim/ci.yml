@@ -3,10 +3,10 @@
   variables:
     RULES_CHANGES_PATH: "dotnet-core-5.0-slim/**/*"
     DIR_PATH: "dotnet-core-5.0-slim"
-    IMAGE_VERSION: "5.0-slim"
+    IMAGE_VERSION: "5.0-slim-24h1.1"
     IMAGE_TAG: "5.0-buster-slim"
     BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:$IMAGE_TAG"
-    IMAGE_PATH: "rebuild-baseimage/dotnet/core/aspnet:$IMAGE_VERSION"
+    IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
     # IMAGE_PATH: "base/node:$IMAGE_VERSION"
 
 dotnetcore-50-slim-test:
