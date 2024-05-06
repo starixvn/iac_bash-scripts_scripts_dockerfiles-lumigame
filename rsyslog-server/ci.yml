@@ -1,0 +1,18 @@
+.rsyslog-server:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "rsyslog-server/**/*"
+    DIR_PATH: "rsyslog-server"
+    IMAGE_VERSION: "v1.5-auto"
+    IMAGE_TAG: "bookworm-slim"
+    BASE_IMAGE: "debian:$IMAGE_TAG"
+    # IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
+    IMAGE_PATH: "base/rsyslog-server:$IMAGE_VERSION"
+
+rsyslog-server-test:
+  extends: [.rsyslog-server, .test]
+
+rsyslog-server-build:
+  extends: [.rsyslog-server, .build]
+  needs: ["rsyslog-server-test"]
+
