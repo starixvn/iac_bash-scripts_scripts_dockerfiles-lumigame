@@ -1,0 +1,16 @@
+.nvidia-cuda-ubuntu22:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "nvidia-cuda-ubuntu22/**/*"
+    DIR_PATH: "nvidia-cuda-ubuntu22"
+    IMAGE_VERSION: "12.5.0-base-ubuntu22.04"
+    BASE_IMAGE: "nvcr.io/nvidia/cuda:12.5.0-base-ubuntu22.04"
+    IMAGE_PATH: "base/nvidia/cuda:$IMAGE_VERSION"
+
+nvidia-cuda-ubuntu22-test:
+  extends: [.nvidia-cuda-ubuntu22, .test]
+
+nvidia-cuda-ubuntu22-build:
+  extends: [.nvidia-cuda-ubuntu22, .build]
+  needs: ["nvidia-cuda-ubuntu22-test"]
+
