@@ -4,9 +4,9 @@
     RULES_CHANGES_PATH: "logstash/**/*"
     DIR_PATH: "logstash"
     # BASE_IMAGE: "docker.elastic.co/logstash/logstash:8.5.1"
-    BASE_IMAGE: "docker.elastic.co/logstash/logstash:8.14.3"
+    BASE_IMAGE: "docker.elastic.co/logstash/logstash:7.17.6"
     # BASE_IMAGE: "opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0"
-    IMAGE_VERSION: "8.14.3"
+    IMAGE_VERSION: "7.17.6"
     IMAGE_PATH: "base/logstash/logstash:$IMAGE_VERSION"
     
 logstash-test:
