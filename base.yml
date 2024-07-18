@@ -1,4 +1,4 @@
-image: $DOCKER_REG_LOCAL_URL/rebuild-baseimage/docker:24.0.7
+image: $DOCKER_REG_LOCAL_URL/base/docker:24.0.7
 variables:
   RULES_CHANGES_PATH: "**/*"
   docker_reg_user: "$DOCKER_REG_LOCAL_USERNAME"
