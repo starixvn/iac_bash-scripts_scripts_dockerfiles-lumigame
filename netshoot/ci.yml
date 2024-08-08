@@ -1,0 +1,15 @@
+.netshoot:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "netshoot/**/*"
+    DIR_PATH: "netshoot"
+    IMAGE_VERSION: "bookworm"
+    BASE_IMAGE: "debian:bookworm"
+    IMAGE_PATH: "base/netshoot:$IMAGE_VERSION"
+
+netshoot-test:
+  extends: [.netshoot, .test]
+
+netshoot-build:
+  extends: [.netshoot, .build]
+  needs: ["netshoot-test"]
