@@ -3,8 +3,8 @@
   variables:
     RULES_CHANGES_PATH: "vault-snapshot/**/*"
     DIR_PATH: "vault-snapshot"
-    BASE_IMAGE: "minio/mc:RELEASE.2024-08-17T11-33-50Z"
-    IMAGE_VERSION: "0.1"
+    BASE_IMAGE: "bitnami/minio-client:2024.8.17"
+    IMAGE_VERSION: "2024.8.17"
     IMAGE_PATH: "base/nexops-tools/vault-snapshot:$IMAGE_VERSION"
 
 vault-snapshot-test:
