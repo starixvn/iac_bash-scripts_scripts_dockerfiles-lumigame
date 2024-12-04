@@ -1,0 +1,15 @@
+.default-backend-ingress:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "default-backend-ingress/**/*"
+    DIR_PATH: "default-backend-ingress"
+    BASE_IMAGE: "nginx:mainline-alpine"
+    IMAGE_VERSION: "latest"
+    IMAGE_PATH: "base/nexops-tools/default-backend-ingress:$IMAGE_VERSION"
+
+default-backend-ingress-test:
+  extends: [.default-backend-ingress, .test]
+
+default-backend-ingress-build:
+  extends: [.default-backend-ingress, .build]
+  needs: ["default-backend-ingress-test"]
