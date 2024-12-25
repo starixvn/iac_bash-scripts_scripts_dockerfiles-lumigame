@@ -13,7 +13,3 @@ haproxy-test:
 haproxy-build:
   extends: [.haproxy, .build]
   needs: ["haproxy-test"]
-##
-haproxy-deploy:
-  extends: [.haproxy, .deploy]
-  needs: ["haproxy-build"]
