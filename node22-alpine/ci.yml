@@ -1,0 +1,18 @@
+.node22-alpine:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "node22-alpine/**/*"
+    DIR_PATH: "node22-alpine"
+    IMAGE_VERSION: "22-alpine"
+    IMAGE_TAG: "22-alpine"
+    BASE_IMAGE: "node:$IMAGE_TAG"
+    # IMAGE_PATH: "rebuild-baseimage/node:$IMAGE_VERSION"
+    IMAGE_PATH: "base/node:$IMAGE_VERSION-25h1.1"
+
+node22-alpine-test:
+  extends: [.node22-alpine, .test]
+
+node22-alpine-build:
+  extends: [.node22-alpine, .build]
+  needs: ["node22-alpine-test"]
+
