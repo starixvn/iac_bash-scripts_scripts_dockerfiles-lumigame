@@ -1,5 +1,5 @@
 .haproxy:
-  extends: .base-rules
+  # extends: .base-rules
   variables:
     RULES_CHANGES_PATH: "haproxy/**/*"
     DIR_PATH: "haproxy"
