@@ -5,7 +5,7 @@ stages:
 ############
 include:
   - local: "base.yml"
-  - local: "**/ci.yml"
+  # - local: "**/ci.yml"
   
 ###########
 .general-script:
