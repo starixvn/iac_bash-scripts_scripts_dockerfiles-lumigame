@@ -6,29 +6,45 @@ stages:
 include:
   - local: "base.yml"
   # - local: "**/ci.yml"
+  - local: "/haproxy/ci.yml"
   
 ###########
-.general-script:
-  docker-login:
-    - docker login -u $docker_reg_user -p $docker_reg_pass $docker_reg_url
-#    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
+# .general-script:
+#   docker-login:
+#     - docker login -u $docker_reg_user -p $docker_reg_pass $docker_reg_url
+# #    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
 
-.base-rules:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      changes: 
-        - $RULES_CHANGES_PATH
+# .base-rules:
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "push"
+#       changes: 
+#         - $RULES_CHANGES_PATH
 .test:
   stage: test
+  image: aquasec/trivy:latest
   script:
-    - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
+    # Display Dockerfile contents  
     - cat $DIR_PATH/Dockerfile
-    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
-    - ./trivy config --exit-code 0 --severity HIGH $DIR_PATH/
-    - ./trivy config --exit-code 1 --severity CRITICAL $DIR_PATH/
+    - |
+      # Run Trivy config and always generate the report
+      trivy config \
+        --severity HIGH,CRITICAL \
+        --exit-code 0 \
+        --format json \
+        --output ${CONFIG_SCAN_REPORT} \
+        $DIR_PATH/
+      # Fail the pipeline only if there are serious vulnerabilities
+      trivy config \
+       --severity CRITICAL \
+       --exit-code 1 \
+       $DIR_PATH/
     - echo "done Scan Dockerfile !"
   tags:
     - docker
+  artifacts:
+    when: always
+    paths:
+      - ${CONFIG_SCAN_REPORT}
 
 .build:
   stage: build
@@ -52,6 +68,179 @@ include:
   tags:
     - docker
     # - testlab-runner
+  artifacts:
+    paths:
+      - ${IMAGE_SCAN_REPORT}
+
+# Upload to DefectDojo
+.defectdojo_upload:
+  image: $DOCKER_REG_LOCAL_URL/base/alpine:git-3.21
+  stage: upload
+  before_script:
+  - apk add --no-cache bash curl jq
+  script:
+    - echo "🔍 Checking DefectDojo product and engagement availability"
+    # Validate critical environment variables
+    - |
+      for var in DEFECTDOJO_URL DEFECTDOJO_API_KEY DEFECTDOJO_PRODUCT_NAME DEFECTDOJO_DEPT ; do
+        eval value='$'"$var"
+        if [ -z "$value" ]; then
+          echo "❌ Error: $var is not set"; exit 1
+        fi
+      done
+    - |
+      # Function to handle API errors
+      handle_api_error() {
+        local status=$1
+        local body=$2
+        local action=$3
+        echo "❌ Failed to $action (HTTP $status, Response: $body)"
+        exit 1
+      }
+
+      # Query existing product type
+      RESPONSE=$(curl -s -w "\n%{http_code}" \
+        -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        "${DEFECTDOJO_URL}/api/v2/product_types/?name=${DEFECTDOJO_DEPT}" || { echo "❌ Error: Failed to query product type"; exit 1; })
+      
+      STATUS=$(echo "$RESPONSE" | tail -n1)
+      BODY=$(echo "$RESPONSE" | sed '$d')
+      
+      # Process response
+      if [ "$STATUS" -eq 200 ] && [ "$(echo "$BODY" | jq '.count')" -ge 1 ]; then
+        PRODUCT_TYPE_ID=$(echo "$BODY" | jq -r '.results[0].id')
+        echo "✅ Product type '${DEFECTDOJO_DEPT}' found with ID: ${PRODUCT_TYPE_ID}"
+      else
+        echo "📝 Product type '${DEFECTDOJO_DEPT}' not found, creating..."
+        
+        # Prepare create request payload
+        JSON_PAYLOAD=$(jq -n \
+          --arg name "${DEFECTDOJO_DEPT}" \
+          --arg desc "Auto-created product type for ${DEFECTDOJO_DEPT}" \
+          '{name: $name, description: $desc}')
+        
+        # Create new product type
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+          -H "Content-Type: application/json" \
+          "${DEFECTDOJO_URL}/api/v2/product_types/" \
+          -d "$JSON_PAYLOAD" || { echo "❌ Error: Failed to create product type"; exit 1; })
+        
+        STATUS=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+
+        if [ "$STATUS" -eq 201 ]; then
+          PRODUCT_TYPE_ID=$(echo "$BODY" | jq -r '.id')
+          echo "✅ Product type '${DEFECTDOJO_DEPT}' created with ID: ${PRODUCT_TYPE_ID}"
+        else
+          handle_api_error "$STATUS" "$BODY" "create product type"
+        fi
+      fi
+
+    # Check if product exists
+    - |
+      PRODUCT_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        "${DEFECTDOJO_URL}/api/v2/products/?name=${DEFECTDOJO_PRODUCT_NAME}" || { echo "❌ Error: Failed to query product"; exit 1; })
+      PRODUCT_STATUS=$(echo "$PRODUCT_RESPONSE" | tail -n1)
+      PRODUCT_BODY=$(echo "$PRODUCT_RESPONSE" | sed '$d')
+      echo "DEBUG: Product response body: $PRODUCT_BODY"
+      if [ "$PRODUCT_STATUS" -eq 200 ] && [ "$(echo "$PRODUCT_BODY" | jq '.count')" -ge 1 ]; then
+        PRODUCT_ID=$(echo "$PRODUCT_BODY" | jq -r '.results[0].id')
+        echo "✅ Product '${DEFECTDOJO_PRODUCT_NAME}' found with ID: ${PRODUCT_ID}"
+      else
+        echo "📝 Product '${DEFECTDOJO_PRODUCT_NAME}' not found, creating..."
+        CREATE_PRODUCT_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+          -H "Content-Type: application/json" \
+          "${DEFECTDOJO_URL}/api/v2/products/" \
+          -d "{\"name\": \"${DEFECTDOJO_PRODUCT_NAME}\", \"description\": \"Auto-created product for ${DEFECTDOJO_PRODUCT_NAME}\", \"prod_type\": ${PRODUCT_TYPE_ID}}" \
+          || { echo "❌ Error: Failed to create product"; exit 1; })
+        CREATE_PRODUCT_STATUS=$(echo "$CREATE_PRODUCT_RESPONSE" | tail -n1)
+        CREATE_PRODUCT_BODY=$(echo "$CREATE_PRODUCT_RESPONSE" | sed '$d')
+        echo "DEBUG: Create product response body: $CREATE_PRODUCT_BODY"
+        if [ "$CREATE_PRODUCT_STATUS" -eq 201 ]; then
+          PRODUCT_ID=$(echo "$CREATE_PRODUCT_BODY" | jq -r '.id')
+          echo "✅ Product '${DEFECTDOJO_PRODUCT_NAME}' created with ID: ${PRODUCT_ID}"
+        else
+          echo "❌ Failed to create product (HTTP $CREATE_PRODUCT_STATUS, Response: $CREATE_PRODUCT_BODY)"
+          exit 1
+        fi
+      fi
+
+    # Check if engagement exists
+    - |
+      ENGAGEMENT_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        "${DEFECTDOJO_URL}/api/v2/engagements/?product=${PRODUCT_ID}&name=${ENGAGEMENT_NAME}" || { echo "❌ Error: Failed to query engagement"; exit 1; })
+      ENGAGEMENT_STATUS=$(echo "$ENGAGEMENT_RESPONSE" | tail -n1)
+      ENGAGEMENT_BODY=$(echo "$ENGAGEMENT_RESPONSE" | sed '$d')
+      echo "DEBUG: Engagement response body: $ENGAGEMENT_BODY"
+      if [ "$ENGAGEMENT_STATUS" -eq 200 ] && [ "$(echo "$ENGAGEMENT_BODY" | jq '.count')" -ge 1 ]; then
+        ENGAGEMENT_ID=$(echo "$ENGAGEMENT_BODY" | jq -r '.results[0].id')
+        echo "✅ Engagement '${ENGAGEMENT_NAME}' found with ID: ${ENGAGEMENT_ID}"
+      else
+        echo "📝 Engagement '${ENGAGEMENT_NAME}' not found, creating..."
+        ENGAGEMENT_JSON=$(jq -n \
+          --arg name "$ENGAGEMENT_NAME" \
+          --argjson product "$PRODUCT_ID" \
+          --argjson deduplication_on_engagement "${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
+          --argjson threat_model "${DEFECTDOJO_ENGAGEMENT_THREAT_MODEL}" \
+          --argjson api_test "${DEFECTDOJO_ENGAGEMENT_API_TEST}" \
+          --argjson pen_test "${DEFECTDOJO_ENGAGEMENT_PEN_TEST}" \
+          --argjson check_list "${DEFECTDOJO_ENGAGEMENT_CHECK_LIST}" \
+          --arg target_start "$(date +%F)" \
+          --arg target_end "$(date -d "+${DEFECTDOJO_ENGAGEMENT_PERIOD} days" +%Y-%m-%d)" \
+          --arg status "${DEFECTDOJO_ENGAGEMENT_STATUS}" \
+          '{name: $name, product: $product, target_start: $target_start, target_end: $target_end, status: $status, deduplication_on_engagement: $deduplication_on_engagement, threat_model: $threat_model, api_test: $api_test, pen_test: $pen_test, check_list: $check_list}')
+        echo "DEBUG: Engagement JSON payload: $ENGAGEMENT_JSON"
+        CREATE_ENGAGEMENT_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+          -H "Content-Type: application/json" \
+          "${DEFECTDOJO_URL}/api/v2/engagements/" \
+          -d "$ENGAGEMENT_JSON" || { echo "❌ Error: Failed to create engagement"; exit 1; })
+        CREATE_ENGAGEMENT_STATUS=$(echo "$CREATE_ENGAGEMENT_RESPONSE" | tail -n1)
+        CREATE_ENGAGEMENT_BODY=$(echo "$CREATE_ENGAGEMENT_RESPONSE" | sed '$d')
+        echo "DEBUG: Create engagement response body: $CREATE_ENGAGEMENT_BODY"
+        if [ "$CREATE_ENGAGEMENT_STATUS" -eq 201 ]; then
+          ENGAGEMENT_ID=$(echo "$CREATE_ENGAGEMENT_BODY" | jq -r '.id')
+          echo "✅ Engagement '${ENGAGEMENT_NAME}' created with ID: ${ENGAGEMENT_ID}"
+        else
+          echo "❌ Failed to create engagement (HTTP $CREATE_ENGAGEMENT_STATUS, Response: $CREATE_ENGAGEMENT_BODY)"
+          exit 1
+        fi
+      fi
+
+    - test -f ${DEFECTDOJO_SCAN_FILE} || { echo "❌ Trivy report not found"; exit 1; }
+    - echo "📤 Uploading Trivy scan report to DefectDojo"
+    - |
+      curl -s -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
+        -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        -F "scan_date=$(date +%F)" \
+        -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
+        -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
+        -F "active=true" \
+        -F "verified=true" \
+        -F "product_name=${DEFECTDOJO_PRODUCT_NAME}" \
+        -F "engagement_name=${ENGAGEMENT_NAME}" \
+        -F "engagement=${ENGAGEMENT_ID}" \
+        -F "test_type=\"${DEFECTDOJO_SCAN_TEST_TYPE}\"" \
+        -F "auto_create_context=true" \
+        -F "deduplication_on_engagement=true" \
+        -F "close_old_findings=true" \
+        -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
+        -F "file=@${DEFECTDOJO_SCAN_FILE}" \
+        -w "\nHTTP Status: %{http_code}\n" \
+        || ECHO_CURL_ERROR=$?
+    - |
+      if [ -n "$ECHO_CURL_ERROR" ]; then
+        echo "❌ Failed to upload report (curl error code: $ECHO_CURL_ERROR)"
+        exit 1
+      fi
+    - echo "✅ Upload completed"
+  tags:
+    - docker
+
+
+
 
 # .deploy:
 #   stage: deploy
