@@ -16,6 +16,34 @@ logstash-build:
   extends: [.logstash, .build]
   needs: ["logstash-test"]
 
+
+logstash-config-scan-reports:
+  extends: [.defectdojo_upload, .logstash]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Config Scan "
+  needs:
+    - job: logstash-test
+      artifacts: true
+  when: always
+
+
+logstash-image-scan-reports:
+  extends: [.defectdojo_upload, .logstash]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Image Scan "
+  needs:
+    - job: logstash-build
+      artifacts: true
+  when: always
+
 # logstash-deploy:
 #   extends: [.logstash, .deploy]
 #   needs: ["logstash-build"]
