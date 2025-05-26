@@ -1,5 +1,5 @@
 .rsyslog-server:
-  extends: .base-rules
+  # extends: .base-rules
   variables:
     RULES_CHANGES_PATH: "rsyslog-server/**/*"
     DIR_PATH: "rsyslog-server"

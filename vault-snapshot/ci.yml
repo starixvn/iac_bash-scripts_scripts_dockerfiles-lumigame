@@ -1,5 +1,5 @@
 .vault-snapshot:
-  extends: .base-rules
+  # extends: .base-rules
   variables:
     RULES_CHANGES_PATH: "vault-snapshot/**/*"
     DIR_PATH: "vault-snapshot"
