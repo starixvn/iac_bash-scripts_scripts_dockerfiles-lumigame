@@ -1,6 +1,7 @@
 stages:
   - test
   - build
+  - upload
   - deploy
 ############
 include:
