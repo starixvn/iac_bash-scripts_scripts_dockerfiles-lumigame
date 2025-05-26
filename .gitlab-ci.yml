@@ -9,10 +9,10 @@ include:
   - local: "/haproxy/ci.yml"
   
 ###########
-# .general-script:
-#   docker-login:
-#     - docker login -u $docker_reg_user -p $docker_reg_pass $docker_reg_url
-# #    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
+.general-script:
+  docker-login:
+    - docker login -u $docker_reg_user -p $docker_reg_pass $docker_reg_url
+#    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
 
 # .base-rules:
 #   rules:
