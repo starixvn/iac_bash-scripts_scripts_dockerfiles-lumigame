@@ -8,12 +8,14 @@ include:
   - local: "base.yml"
   # - local: "**/ci.yml"
   - local: "/haproxy/ci.yml"
-  
+  - local: "/vault-snapshot/ci.yml"
+  - local: "/rsyslog-server/ci.yml"
+
 ###########
 .general-script:
   docker-login:
     - docker login -u $docker_reg_user -p $docker_reg_pass $docker_reg_url
-#    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
+
 
 # .base-rules:
 #   rules:
