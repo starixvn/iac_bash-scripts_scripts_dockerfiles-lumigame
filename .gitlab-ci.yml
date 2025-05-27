@@ -255,7 +255,7 @@ include:
         -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
         -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
         -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-        -F "source_code_management_uri=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER} \
+        -F "source_code_management_uri=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER}" \
         -F "description=$CI_COMMIT_DESCRIPTION"
         -F "version=$CI_COMMIT_REF_NAME" \
         -F "first_contacted=$TODAY" \
