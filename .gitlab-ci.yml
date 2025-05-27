@@ -74,8 +74,6 @@ include:
         --vuln-type os \
         --exit-code 0 \
         --severity HIGH,CRITICAL \
-        --format json \
-        --output ${IMAGE_SCAN_REPORT} \
         $DOCKER_REG_URL/$IMAGE_PATH
 
     # Second command: Fail pipeline for CRITICAL
@@ -86,9 +84,7 @@ include:
         --ignore-unfixed \
         --vuln-type os \
         --exit-code 1 \
-        --severity HIGH,CRITICAL \
-        --format json \
-        --output ${IMAGE_SCAN_REPORT} \
+        --severity CRITICAL \
         $DOCKER_REG_URL/$IMAGE_PATH
 
 
