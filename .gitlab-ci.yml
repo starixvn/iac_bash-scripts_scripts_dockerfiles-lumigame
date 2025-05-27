@@ -67,7 +67,7 @@ include:
         --server $TRIVY_SERVER \
         --ignore-unfixed \
         --vuln-type os \
-        --exit-code 0 \
+        --exit-code 1 \
         --severity HIGH,CRITICAL \
         --token $TRIVY_TOKEN \
         --format json \
