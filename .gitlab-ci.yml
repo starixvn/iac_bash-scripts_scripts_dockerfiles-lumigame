@@ -62,7 +62,7 @@ include:
     - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
     - echo "$TRIVY_SERVER - $TRIVY_VERSION";
     # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity HIGH,CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
-    - ./trivy image --timeout 25m --server $TRIVY_SERVER --ignore-unfixed --exit-code 0 --severity MEDIUM,HIGH,CRITICAL --token $TRIVY_TOKEN --vuln-type os $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
+    - ./trivy image --server $TRIVY_SERVER --ignore-unfixed --vuln-type os --exit-code 0 --severity MEDIUM,HIGH,CRITICAL --token $TRIVY_TOKEN --vuln-type os $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
     # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 1 --severity CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH
     - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
     - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
