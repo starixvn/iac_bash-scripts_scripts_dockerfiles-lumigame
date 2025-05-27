@@ -104,6 +104,7 @@ include:
   stage: upload
   before_script:
   - apk add --no-cache bash curl jq
+  - TODAY=`date +%Y-%m-%d`
   script:
     - echo "🔍 Checking DefectDojo product and engagement availability"
     # Validate critical environment variables
@@ -254,6 +255,17 @@ include:
         -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
         -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
         -F "file=@${DEFECTDOJO_SCAN_FILE}" \
+        -F "source_code_management_uri=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER} \
+        -F "description=$CI_COMMIT_DESCRIPTION"
+        -F "version=$CI_COMMIT_REF_NAME" \
+        -F "first_contacted=$TODAY" \
+        -F "tags=GITLAB-CI" \
+        -F "name=Pipeline #$CI_PIPELINE_ID" \
+        -F "tracker=$CI_PROJECT_URL" \
+        -F "threat_model=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL"
+        -F "api_test=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL" \
+        -F "pen_test=$DEFECTDOJO_ENGAGEMENT_PEN_TEST" \
+        -F "check_list=$DEFECTDOJO_ENGAGEMENT_CHECK_LIST" \
         -w "\nHTTP Status: %{http_code}\n" \
         || ECHO_CURL_ERROR=$?
     - |
