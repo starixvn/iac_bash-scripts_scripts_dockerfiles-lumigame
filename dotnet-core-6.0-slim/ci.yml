@@ -13,7 +13,7 @@ dotnetcore-60-slim-test:
   extends: [.dotnetcore-60-slim, .test]
 
 dotnetcore-60-slim-build:
-  extends: [.dotnetcore-60-slim, .build]
+  extends: [.dotnetcore-60-slim, .config_scan]
   needs: ["dotnetcore-60-slim-test"]
 
 dotnetcore-60-slim-config-scan-reports:
