@@ -10,7 +10,6 @@ variables:
 #   TRIVY_TOKEN: "H5nF5ywy262wt881ZWpq"
 #   TRIVY_SERVER: "http://10.18.200.160:1115"
 
-
    #Defect Dojo Variable
   DEFECTDOJO_DEPT: "NX-Atomix"
   DEFECTDOJO_PRODUCT_NAME: "${CI_PROJECT_NAME}-${DEFECTDOJO_DEPT}"
