@@ -7,7 +7,7 @@ stages:
 include:
   - local: "base.yml"
   # - local: "**/ci.yml"
-  - local: "/dotnet-core-7.0-alpine/ci.yml"
+  - local: "/dotnet-core-8.0-slim/ci.yml"
   # - local: "/vault-snapshot/ci.yml"
   # - local: "/rsyslog-server/ci.yml"
 
