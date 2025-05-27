@@ -104,6 +104,8 @@ include:
   stage: upload
   before_script:
   - apk add --no-cache bash curl jq
+  - export TODAY=$(date +%Y-%m-%d)
+  - export TARGET_END=$(date -d "+$DEFECTDOJO_ENGAGEMENT_PERIOD days" +%Y-%m-%d)
   script:
     - echo "🔍 Checking DefectDojo product and engagement availability"
     # Validate critical environment variables
@@ -243,17 +245,35 @@ include:
         -F "scan_date=$(date +%F)" \
         -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
         -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
-        -F "active=true" \
-        -F "verified=true" \
+        -F "active=#{DEFECTDOJO_SCAN_ACTIVE}" \
+        -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
         -F "product_name=${DEFECTDOJO_PRODUCT_NAME}" \
         -F "engagement_name=${ENGAGEMENT_NAME}" \
         -F "engagement=${ENGAGEMENT_ID}" \
         -F "test_type=\"${DEFECTDOJO_SCAN_TEST_TYPE}\"" \
-        -F "auto_create_context=true" \
-        -F "deduplication_on_engagement=true" \
-        -F "close_old_findings=true" \
+        -F "auto_create_context=${DEFECTDOJO_AUTO_CREATE_CONTEXT}" \
+        -F "deduplication_on_engagement=${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
+        -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
         -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
         -F "file=@${DEFECTDOJO_SCAN_FILE}" \
+        -F "engagement_type=CI/CD"
+        -F "build_id=$CI_PIPELINE_ID" \
+        -F "commit_hash=$CI_COMMIT_SHORT_SHA" \
+        -F "branch_tag=$CI_COMMIT_REF_NAME" \
+        -F "source_code_management_uri=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER} \
+        -F "description=$CI_COMMIT_DESCRIPTION"
+        -F "version=$CI_COMMIT_REF_NAME" \
+        -F "first_contacted=$TODAY" \
+        -F "tags=GITLAB-CI" \
+        -F "name=Pipeline #$CI_PIPELINE_ID" \
+        -F "target_start=$TODAY" \
+        -F "target_end=$TARGET_END" \
+        -F "tracker=$CI_PROJECT_URL" \
+        -F "threat_model=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL"
+        -F "api_test=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL" \
+        -F "pen_test=$DEFECTDOJO_ENGAGEMENT_PEN_TEST" \
+        -F "check_list=$DEFECTDOJO_ENGAGEMENT_CHECK_LIST" \
+        -F "status=$DEFECTDOJO_ENGAGEMENT_STATUS" \
         -w "\nHTTP Status: %{http_code}\n" \
         || ECHO_CURL_ERROR=$?
     - |
