@@ -106,11 +106,10 @@ include:
     - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
     - docker push $DOCKER_REG_URL/$IMAGE_PATH
     - echo "$DOCKER_REG_URL/$IMAGE_PATH - Push is DONE!";
-  #allow_failure: true
   tags:
     - docker
-    # - testlab-runner
   artifacts:
+    when: always
     paths:
       - ${IMAGE_SCAN_REPORT}
 
