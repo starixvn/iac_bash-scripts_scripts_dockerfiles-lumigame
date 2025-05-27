@@ -34,17 +34,18 @@ include:
     - |
       # First scan: Generate report for HIGH/CRITICAL vulnerabilities
       ./trivy config \
-        --scanners secret \
-        --exit-code 0 \
+        --scanners config,secret \
+        --exit-code 1 \
         --severity HIGH,CRITICAL \
         --format json \
         --output ${CONFIG_SCAN_REPORT} \
         $DIR_PATH/
 
+
       # Second scan: Check for CRITICAL vulnerabilities
       ./trivy config \
-        --scanners secret \
-        --exit-code 0 \
+        --scanners config,secret \
+        --exit-code 1 \
         --severity CRITICAL \
         $DIR_PATH/
     - ./trivy config --scanners secret --exit-code 1 --severity CRITICAL $DIR_PATH/
