@@ -63,19 +63,31 @@ include:
     - echo "$TRIVY_SERVER - $TRIVY_VERSION";
     # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
     # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 1 --severity CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
-    - ./trivy image --server $TRIVY_SERVER \
-      --ignore-unfixed --vuln-type os \
-      --exit-code 0 --severity HIGH,CRITICAL \
-      --format json \
-      --output ${IMAGE_SCAN_REPORT} \
-      --cache-dir /tmp/trivy-cache \
-      $DOCKER_REG_URL/$IMAGE_PATH
 
-    - ./trivy image --server $TRIVY_SERVER \
-      --ignore-unfixed --vuln-type os \
-      --exit-code 1 --severity CRITICAL \
-      --cache-dir /tmp/trivy-cache \
-      $DOCKER_REG_URL/$IMAGE_PATH
+
+    # First command: Generate a report for HIGH/CRITICAL (no pipeline failure)
+    - |
+      ./trivy --server $TRIVY_SERVER \
+        --cache-dir /tmp/trivy-cache \
+        image \
+        --ignore-unfixed \
+        --vuln-type os \
+        --exit-code 0 \
+        --severity HIGH,CRITICAL \
+        --format json \
+        --output ${IMAGE_SCAN_REPORT} \
+        $DOCKER_REG_URL/$IMAGE_PATH
+
+    # Second command: Fail pipeline for CRITICAL
+    - |
+      ./trivy --server $TRIVY_SERVER \
+        --cache-dir /tmp/trivy-cache \
+        image \
+        --ignore-unfixed \
+        --vuln-type os \
+        --exit-code 1 \
+        --severity CRITICAL \
+        $DOCKER_REG_URL/$IMAGE_PATH
 
 
     # - |
