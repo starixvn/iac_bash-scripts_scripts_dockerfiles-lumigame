@@ -79,16 +79,16 @@ include:
         --output ${IMAGE_SCAN_REPORT} \
         $DOCKER_REG_URL/$IMAGE_PATH
 
-    # Second command: Fail pipeline for CRITICAL
-    # - |
-    #   ./trivy --server $TRIVY_SERVER \
-    #     --cache-dir /tmp/trivy-cache \
-    #     image \
-    #     --ignore-unfixed \
-    #     --vuln-type os \
-    #     --exit-code 1 \
-    #     --severity CRITICAL \
-    #     $DOCKER_REG_URL/$IMAGE_PATH
+    #Second command: Fail pipeline for CRITICAL
+    - |
+      ./trivy --server $TRIVY_SERVER \
+        --cache-dir /tmp/trivy-cache \
+        image \
+        --ignore-unfixed \
+        --vuln-type os \
+        --exit-code 1 \
+        --severity CRITICAL \
+        $DOCKER_REG_URL/$IMAGE_PATH
 
 
     # - |
