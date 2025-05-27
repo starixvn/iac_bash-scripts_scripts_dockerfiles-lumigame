@@ -51,6 +51,7 @@ include:
 
 .build:
   stage: build
+  image: aquasec/trivy:latest
   script:
     - !reference [.general-script, docker-login]
     - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
@@ -62,8 +63,9 @@ include:
     - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
     - echo "$TRIVY_SERVER - $TRIVY_VERSION";
     # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity HIGH,CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
-    - ./trivy image --server $TRIVY_SERVER --exit-code 0 --severity MEDIUM,HIGH,CRITICAL --token $TRIVY_TOKEN --vuln-type os $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
     # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 1 --severity CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH
+    - trivy image --ignore-unfixed --exit-code 0 --severity HIGH,CRITICAL $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
+
     - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
     - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
     - docker push $DOCKER_REG_URL/$IMAGE_PATH
