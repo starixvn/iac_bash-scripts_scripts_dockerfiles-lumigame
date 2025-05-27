@@ -3,8 +3,8 @@
   variables:
     RULES_CHANGES_PATH: "dotnet-core-6.0-slim/**/*"
     DIR_PATH: "dotnet-core-6.0-slim"
-    IMAGE_VERSION: "6.0-slim-24h1.1.test"
-    IMAGE_TAG: "6.0-bookworm-slim"
+    IMAGE_VERSION: "6.0.27-bullseye-slim"
+    IMAGE_TAG: "6.0.27-bullseye-slim"
     BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:$IMAGE_TAG"
     IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
     # IMAGE_PATH: "base/node:$IMAGE_VERSION"
