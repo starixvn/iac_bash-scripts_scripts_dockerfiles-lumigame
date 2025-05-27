@@ -243,7 +243,7 @@ include:
         -F "scan_date=$(date +%F)" \
         -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
         -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
-        -F "active=#{DEFECTDOJO_SCAN_ACTIVE}" \
+        -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
         -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
         -F "product_name=${DEFECTDOJO_PRODUCT_NAME}" \
         -F "engagement_name=${ENGAGEMENT_NAME}" \
