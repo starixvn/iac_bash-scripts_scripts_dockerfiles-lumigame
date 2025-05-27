@@ -104,8 +104,6 @@ include:
   stage: upload
   before_script:
   - apk add --no-cache bash curl jq
-  - export TODAY=$(date +%Y-%m-%d)
-  - export TARGET_END=$(date -d "+$DEFECTDOJO_ENGAGEMENT_PERIOD days" +%Y-%m-%d)
   script:
     - echo "🔍 Checking DefectDojo product and engagement availability"
     # Validate critical environment variables
@@ -266,8 +264,6 @@ include:
         -F "first_contacted=$TODAY" \
         -F "tags=GITLAB-CI" \
         -F "name=Pipeline #$CI_PIPELINE_ID" \
-        -F "target_start=$TODAY" \
-        -F "target_end=$TARGET_END" \
         -F "tracker=$CI_PROJECT_URL" \
         -F "threat_model=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL"
         -F "api_test=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL" \
