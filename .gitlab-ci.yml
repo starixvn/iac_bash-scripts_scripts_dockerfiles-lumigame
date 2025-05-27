@@ -266,7 +266,7 @@ include:
         -F "api_test=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL" \
         -F "pen_test=$DEFECTDOJO_ENGAGEMENT_PEN_TEST" \
         -F "check_list=$DEFECTDOJO_ENGAGEMENT_CHECK_LIST" \
-        -F "source_code_management_uri=${CI_PROJECT_URL} \
+        -F "source_code_management_uri=${CI_PROJECT_URL}" \
         -w "\nHTTP Status: %{http_code}\n" \
         || ECHO_CURL_ERROR=$?
     - |
