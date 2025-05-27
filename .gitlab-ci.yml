@@ -49,7 +49,7 @@ include:
     paths:
       - ${CONFIG_SCAN_REPORT}
 
-.build:
+build:
   stage: build
   script:
     - !reference [.general-script, docker-login]
@@ -68,13 +68,25 @@ include:
   stage: build
   image: aquasec/trivy:latest
   needs:
-    - job: .build
+    - job: build
       artifacts: true
   script:
     - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
-    # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity HIGH,CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
-    # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 1 --severity CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH
-    - trivy image --ignore-unfixed --exit-code 0 --severity HIGH,CRITICAL $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
+    # Run initial scan and generate report, continue even if vulnerabilities found
+    - |
+      trivy image \
+        --ignore-unfixed \
+        --exit-code 0 \
+        --severity HIGH,CRITICAL \
+        $DOCKER_REG_URL/$IMAGE_PATH \
+        --output ${IMAGE_SCAN_REPORT}
+    # Run second scan checking for critical vulnerabilities that should fail the build
+    - |
+      trivy image \
+        --ignore-unfixed \
+        --exit-code 1 \
+        --severity CRITICAL \
+        $DOCKER_REG_URL/$IMAGE_PATH
   tags:
     - docker
     # - testlab-runner
