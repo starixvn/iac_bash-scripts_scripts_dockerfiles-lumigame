@@ -27,7 +27,7 @@ include:
 
 .test:
   stage: test
-  image: $DOCKER_REG_LOCAL_URL/docker-hub/aquasec/trivy:0.47.0
+  image: $DOCKER_REG_LOCAL_URL/docker-hub/aquasec/trivy:latest
   script:
     # Display Dockerfile contents  
     - cat $DIR_PATH/Dockerfile
