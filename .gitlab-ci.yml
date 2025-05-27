@@ -259,7 +259,6 @@ include:
         -F "description=$CI_COMMIT_DESCRIPTION" \
         -F "version=$CI_COMMIT_REF_NAME" \
         -F "first_contacted=$TODAY" \
-        -F "tags=GITLAB-CI" \
         -F "name=Pipeline #$CI_PIPELINE_ID" \
         -F "tracker=$CI_PROJECT_URL" \
         -F "threat_model=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL" \
