@@ -87,6 +87,8 @@ include:
         --vuln-type os \
         --exit-code 1 \
         --severity HIGH,CRITICAL \
+        --format json \
+        --output ${IMAGE_SCAN_REPORT} \
         $DOCKER_REG_URL/$IMAGE_PATH
 
 
