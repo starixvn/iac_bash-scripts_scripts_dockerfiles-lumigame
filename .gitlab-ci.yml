@@ -255,12 +255,6 @@ include:
         -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
         -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
         -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-        -F "source_code_management_server=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER}" \
-        -F "description=$CI_COMMIT_DESCRIPTION" \
-        -F "version=$CI_COMMIT_REF_NAME" \
-        -F "first_contacted=$TODAY" \
-        -F "threat_model=$DEFECTDOJO_ENGAGEMENT_THREAT_MODEL" \
-        -F "source_code_management_uri=${CI_PROJECT_URL}" \
         -w "\nHTTP Status: %{http_code}\n" \
         || ECHO_CURL_ERROR=$?
     - |
