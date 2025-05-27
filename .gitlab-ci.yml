@@ -61,14 +61,16 @@ include:
     - echo "$DIR_PATH - Build is DONE!";
     - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
     - echo "$TRIVY_SERVER - $TRIVY_VERSION";
-    # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity HIGH,CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH --output ${IMAGE_SCAN_REPORT}
+    # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 0 --severity HIGH --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH
+    # - ./trivy image --server $TRIVY_SERVER  --ignore-unfixed --vuln-type os --exit-code 1 --severity CRITICAL --token $TRIVY_TOKEN $DOCKER_REG_URL/$IMAGE_PATH
+
     - |
       ./trivy image \
         --server $TRIVY_SERVER \
         --ignore-unfixed \
         --vuln-type os \
         --exit-code 1 \
-        --severity HIGH,CRITICAL \
+        --severity CRITICAL \
         --token $TRIVY_TOKEN \
         --format json \
         --output ${IMAGE_SCAN_REPORT} \
