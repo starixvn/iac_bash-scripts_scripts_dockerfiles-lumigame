@@ -274,29 +274,53 @@ include:
     - test -f ${DEFECTDOJO_SCAN_FILE} || { echo "❌ Trivy report not found"; exit 1; }
     - echo "📤 Uploading Trivy scan report to DefectDojo"
     - |
-      curl -s -S -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
-        -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-        -F "scan_date=$(date +%F)" \
-        -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
-        -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
-        -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
-        -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
-        -F "product_name=${DEFECTDOJO_PRODUCT_NAME}" \
-        -F "engagement_name=${ENGAGEMENT_NAME}" \
-        -F "engagement=${ENGAGEMENT_ID}" \
-        -F "test_type=\"${DEFECTDOJO_SCAN_TEST_TYPE}\"" \
-        -F "auto_create_context=${DEFECTDOJO_AUTO_CREATE_CONTEXT}" \
-        -F "deduplication_on_engagement=${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
-        -F "close_old_findings=false" \
-        -F "close_old_findings_product_scope=${DEFECTDOJO_CLOSE_OLD_FINDINGS_PRODUCT_SCOPE}" \
-        -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
-        -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-        -F "source_code_management_server=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER}" \
-        -F "description=$CI_COMMIT_DESCRIPTION" \
-        -F "version=$CI_COMMIT_REF_NAME" \
-        -F "first_contacted=$TODAY" \
-        -w "\nHTTP Status: %{http_code}\n" \
-        || ECHO_CURL_ERROR=$?
+      TEST_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}" || { echo "❌ Error: Failed to query test"; exit 1; })
+      TEST_STATUS=$(echo "$TEST_RESPONSE" | tail -n1)
+      TEST_BODY=$(echo "$TEST_RESPONSE" | sed '$d')
+      
+      if [ "$TEST_STATUS" -eq 200 ] && [ "$(echo "$TEST_BODY" | jq '.count')" -ge 1 ]; then
+        TEST_ID=$(echo "$TEST_BODY" | jq -r '.results[0].id')
+        echo "📤 Reimporting Trivy scan report to existing test in DefectDojo"
+        curl -s -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
+          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+          -F "test=${TEST_ID}" \
+          -F "scan_date=$(date +%F)" \
+          -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
+          -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
+          -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
+          -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
+          -F "close_old_findings=false" \
+          -F "close_old_findings_product_scope=${DEFECTDOJO_CLOSE_OLD_FINDINGS_PRODUCT_SCOPE}" \
+          -F "file=@${DEFECTDOJO_SCAN_FILE}" \
+          -w "\nHTTP Status: %{http_code}\n" \
+          || ECHO_CURL_ERROR=$?
+      else
+        echo "📤 Importing new Trivy scan report to DefectDojo"
+        curl -s -S -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+          -F "scan_date=$(date +%F)" \
+          -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
+          -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
+          -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
+          -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
+          -F "product_name=${DEFECTDOJO_PRODUCT_NAME}" \
+          -F "engagement_name=${ENGAGEMENT_NAME}" \
+          -F "engagement=${ENGAGEMENT_ID}" \
+          -F "test_type=\"${DEFECTDOJO_SCAN_TEST_TYPE}\"" \
+          -F "auto_create_context=${DEFECTDOJO_AUTO_CREATE_CONTEXT}" \
+          -F "deduplication_on_engagement=${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
+          -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
+          -F "close_old_findings_product_scope=${DEFECTDOJO_CLOSE_OLD_FINDINGS_PRODUCT_SCOPE}" \
+          -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
+          -F "file=@${DEFECTDOJO_SCAN_FILE}" \
+          -F "source_code_management_server=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER}" \
+          -F "description=$CI_COMMIT_DESCRIPTION" \
+          -F "version=$CI_COMMIT_REF_NAME" \
+          -F "first_contacted=$TODAY" \
+          -w "\nHTTP Status: %{http_code}\n" \
+          || ECHO_CURL_ERROR=$?
+      fi
     - |
       if [ -n "$ECHO_CURL_ERROR" ]; then
         echo "❌ Failed to upload report (curl error code: $ECHO_CURL_ERROR)"
