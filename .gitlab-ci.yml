@@ -273,7 +273,7 @@ include:
     - test -f ${DEFECTDOJO_SCAN_FILE} || { echo "❌ Trivy report not found"; exit 1; }
     - echo "📤 Uploading Trivy scan report to DefectDojo"
     - |
-      curl -s -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
+      curl -s -S -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
         -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
         -F "scan_date=$(date +%F)" \
         -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
