@@ -7,5 +7,3 @@ RUN wget https://pingpros.com/pub/tcpping -O /usr/bin/tcpping \
     && chmod +x /usr/bin/tcpping
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
     COMPlus_EnableDiagnostics=0
-ENV DEFECTDOJO_API_KEY=1221323ftbcvbnfgdgfgh
-ENV DEFECTDOJO_URL=gitlab.local.vn

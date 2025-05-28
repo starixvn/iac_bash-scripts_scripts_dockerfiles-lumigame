@@ -52,36 +52,6 @@ include:
       - ${CONFIG_SCAN_REPORT}
 
 
-
-
-
-# .test:
-#   stage: test
-#   image: aquasec/trivy:latest
-#   script:
-#     # Display Dockerfile contents  
-#     - cat $DIR_PATH/Dockerfile
-#     - |
-#       # Run Trivy config and always generate the report
-#       trivy config \
-#         --severity HIGH,CRITICAL \
-#         --exit-code 0 \
-#         --format json \
-#         --output ${CONFIG_SCAN_REPORT} \
-#         $DIR_PATH/
-#       # Fail the pipeline only if there are serious vulnerabilities
-#       trivy config \
-#        --severity CRITICAL \
-#        --exit-code 1 \
-#        $DIR_PATH/
-#     - echo "done Scan Dockerfile !"
-#   tags:
-#     - docker
-#   artifacts:
-#     when: always
-#     paths:
-#       - ${CONFIG_SCAN_REPORT}
-
 .build:
   stage: build
   script:
