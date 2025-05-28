@@ -319,6 +319,7 @@ include:
           -F "product_name=${DEFECTDOJO_PRODUCT_NAME}" \
           -F "engagement_name=${ENGAGEMENT_NAME}" \
           -F "engagement=${ENGAGEMENT_ID}" \
+          -F "engagement_type=CI/CD" \
           -F "test_type=${DEFECTDOJO_SCAN_TEST_TYPE}" \
           -F "auto_create_context=${DEFECTDOJO_AUTO_CREATE_CONTEXT}" \
           -F "deduplication_on_engagement=${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
