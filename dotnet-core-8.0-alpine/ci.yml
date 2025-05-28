@@ -23,7 +23,7 @@ dotnetcore-80-alpine-config-scan-reports:
     DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
     DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
     DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
-    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Config Scan "
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Config Scan"
   needs:
     - job: dotnetcore-80-alpine-test
       artifacts: true
@@ -37,7 +37,7 @@ dotnetcore-80-alpine-image-scan-reports:
     DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
     DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
     DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
-    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Image Scan "
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Image Scan"
   needs:
     - job: dotnetcore-80-alpine-build
       artifacts: true
