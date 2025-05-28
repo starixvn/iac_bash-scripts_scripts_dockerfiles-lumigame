@@ -275,7 +275,7 @@ include:
     -  test -f "${DEFECTDOJO_SCAN_FILE}" || { echo "❌ Trivy report not found"; exit 1; }
 
     - |  
-      echo "🔎 Checking for existing Test titled '${DEFECTDOJO_TEST_TITLE}'..."
+      echo "🔎 Checking for existing Test titled ${DEFECTDOJO_TEST_TITLE}"
       EXISTING_TITLE=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
         "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}" \
         | jq -r '.results[]
