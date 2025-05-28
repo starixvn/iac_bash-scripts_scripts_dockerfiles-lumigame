@@ -137,8 +137,9 @@ include:
   image: $DOCKER_REG_LOCAL_URL/base/alpine:git-3.21
   stage: upload
   before_script:
-  - apk add --no-cache bash curl jq
-  - TODAY=`date +%Y-%m-%d`
+    - apk add --no-cache bash curl jq
+  variables:
+    TODAY: $(date +%Y-%m-%d)
   script:
     - |
       # ===== Consolidated Validation =====
@@ -266,6 +267,8 @@ include:
       echo "🚀 All operations completed successfully!"
   tags:
     - docker
+  rules:
+    - when: on_success
 
 
 
