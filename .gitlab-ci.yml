@@ -281,7 +281,7 @@ include:
         | jq -r '.results[]
                    | select(.title=="${DEFECTDOJO_TEST_TITLE}")
                    | .title')
-      echo "🔎 EXISTING_TITLE ${EXISTING_TITLE} - DEFECTDOJO_TEST_TITLE ${DEFECTDOJO_TEST_TITLE}"
+      echo "🔎 EXISTING_TITLE $EXISTING_TITLE - DEFECTDOJO_TEST_TITLE ${DEFECTDOJO_TEST_TITLE}"
       if [ "$EXISTING_TITLE" = "${DEFECTDOJO_TEST_TITLE}" ]; then
         echo "✅ Found existing Test; doing reimport-scan"
         TEST_ID=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
