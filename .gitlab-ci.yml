@@ -285,7 +285,6 @@ include:
         TEST_ID=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
           "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}" \
           | jq -r '.results[] | select(.title=="${DEFECTDOJO_TEST_TITLE}") | .id')
-
         curl -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
           -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
           -F "test=${TEST_ID}" \
