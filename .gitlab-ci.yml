@@ -83,54 +83,54 @@ include:
 #     paths:
 #       - ${CONFIG_SCAN_REPORT}
 
-# .build:
-#   stage: build
-#   script:
-#     - !reference [.general-script, docker-login]
-#     - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
-#     - wget -O .trivyignore https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivyignore?inline=false
-#     - echo "build - $DIR_PATH"
-#     - echo "docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH ."
-#     - docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH .
-#     - echo "$DIR_PATH - Build is DONE!";
-#     - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
-#     - echo "$TRIVY_SERVER - $TRIVY_VERSION";
+.build:
+  stage: build
+  script:
+    - !reference [.general-script, docker-login]
+    - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
+    - wget -O .trivyignore https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivyignore?inline=false
+    - echo "build - $DIR_PATH"
+    - echo "docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH ."
+    - docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH .
+    - echo "$DIR_PATH - Build is DONE!";
+    - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
+    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
 
-#     # First command: Generate a report for HIGH/CRITICAL (no pipeline failure)
-#     - |
-#       ./trivy --server $TRIVY_SERVER \
-#         --cache-dir /tmp/trivy-cache \
-#         image \
-#         --ignore-unfixed \
-#         --vuln-type os \
-#         --exit-code 0 \
-#         --severity HIGH,CRITICAL \
-#         --token $TRIVY_TOKEN \
-#         --format json \
-#         --output ${IMAGE_SCAN_REPORT} \
-#         $DOCKER_REG_URL/$IMAGE_PATH
+    # First command: Generate a report for HIGH/CRITICAL (no pipeline failure)
+    - |
+      ./trivy --server $TRIVY_SERVER \
+        --cache-dir /tmp/trivy-cache \
+        image \
+        --ignore-unfixed \
+        --vuln-type os \
+        --exit-code 0 \
+        --severity HIGH,CRITICAL \
+        --token $TRIVY_TOKEN \
+        --format json \
+        --output ${IMAGE_SCAN_REPORT} \
+        $DOCKER_REG_URL/$IMAGE_PATH
 
-#     #Second command: Fail pipeline for CRITICAL
-#     - |
-#       ./trivy --server $TRIVY_SERVER \
-#         --cache-dir /tmp/trivy-cache \
-#         image \
-#         --ignore-unfixed \
-#         --vuln-type os \
-#         --exit-code 1 \
-#         --severity CRITICAL \
-#         $DOCKER_REG_URL/$IMAGE_PATH
+    #Second command: Fail pipeline for CRITICAL
+    - |
+      ./trivy --server $TRIVY_SERVER \
+        --cache-dir /tmp/trivy-cache \
+        image \
+        --ignore-unfixed \
+        --vuln-type os \
+        --exit-code 1 \
+        --severity CRITICAL \
+        $DOCKER_REG_URL/$IMAGE_PATH
 
-#     - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
-#     - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
-#     - docker push $DOCKER_REG_URL/$IMAGE_PATH
-#     - echo "$DOCKER_REG_URL/$IMAGE_PATH - Push is DONE!";
-#   tags:
-#     - docker
-#   artifacts:
-#     when: always
-#     paths:
-#       - ${IMAGE_SCAN_REPORT}
+    - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
+    - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
+    - docker push $DOCKER_REG_URL/$IMAGE_PATH
+    - echo "$DOCKER_REG_URL/$IMAGE_PATH - Push is DONE!";
+  tags:
+    - docker
+  artifacts:
+    when: always
+    paths:
+      - ${IMAGE_SCAN_REPORT}
 
 # Upload to DefectDojo
 .defectdojo_upload:
