@@ -16,7 +16,6 @@ include:
   docker-login:
     - docker login -u $docker_reg_user -p $docker_reg_pass $docker_reg_url
 
-
 # .base-rules:
 #   rules:
 #     - if: $CI_PIPELINE_SOURCE == "push"
