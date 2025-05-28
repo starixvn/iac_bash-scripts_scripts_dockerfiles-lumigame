@@ -1,5 +1,5 @@
 .dotnetcore-60-slim:
-  # extends: .base-rules
+  extends: .base-rules
   variables:
     RULES_CHANGES_PATH: "dotnet-core-6.0-slim/**/*"
     DIR_PATH: "dotnet-core-6.0-slim"
