@@ -83,54 +83,54 @@ include:
 #     paths:
 #       - ${CONFIG_SCAN_REPORT}
 
-.build:
-  stage: build
-  script:
-    - !reference [.general-script, docker-login]
-    - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
-    - wget -O .trivyignore https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivyignore?inline=false
-    - echo "build - $DIR_PATH"
-    - echo "docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH ."
-    - docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH .
-    - echo "$DIR_PATH - Build is DONE!";
-    - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
-    - echo "$TRIVY_SERVER - $TRIVY_VERSION";
+# .build:
+#   stage: build
+#   script:
+#     - !reference [.general-script, docker-login]
+#     - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
+#     - wget -O .trivyignore https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivyignore?inline=false
+#     - echo "build - $DIR_PATH"
+#     - echo "docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH ."
+#     - docker build --no-cache --build-arg BASE_IMAGE="$BASE_IMAGE" -f $DIR_PATH/Dockerfile -t $DOCKER_REG_URL/$IMAGE_PATH .
+#     - echo "$DIR_PATH - Build is DONE!";
+#     - echo "Trivy Scan image $DOCKER_REG_URL/$IMAGE_PATH"
+#     - echo "$TRIVY_SERVER - $TRIVY_VERSION";
 
-    # First command: Generate a report for HIGH/CRITICAL (no pipeline failure)
-    - |
-      ./trivy --server $TRIVY_SERVER \
-        --cache-dir /tmp/trivy-cache \
-        image \
-        --ignore-unfixed \
-        --vuln-type os \
-        --exit-code 0 \
-        --severity HIGH,CRITICAL \
-        --token $TRIVY_TOKEN \
-        --format json \
-        --output ${IMAGE_SCAN_REPORT} \
-        $DOCKER_REG_URL/$IMAGE_PATH
+#     # First command: Generate a report for HIGH/CRITICAL (no pipeline failure)
+#     - |
+#       ./trivy --server $TRIVY_SERVER \
+#         --cache-dir /tmp/trivy-cache \
+#         image \
+#         --ignore-unfixed \
+#         --vuln-type os \
+#         --exit-code 0 \
+#         --severity HIGH,CRITICAL \
+#         --token $TRIVY_TOKEN \
+#         --format json \
+#         --output ${IMAGE_SCAN_REPORT} \
+#         $DOCKER_REG_URL/$IMAGE_PATH
 
-    #Second command: Fail pipeline for CRITICAL
-    - |
-      ./trivy --server $TRIVY_SERVER \
-        --cache-dir /tmp/trivy-cache \
-        image \
-        --ignore-unfixed \
-        --vuln-type os \
-        --exit-code 1 \
-        --severity CRITICAL \
-        $DOCKER_REG_URL/$IMAGE_PATH
+#     #Second command: Fail pipeline for CRITICAL
+#     - |
+#       ./trivy --server $TRIVY_SERVER \
+#         --cache-dir /tmp/trivy-cache \
+#         image \
+#         --ignore-unfixed \
+#         --vuln-type os \
+#         --exit-code 1 \
+#         --severity CRITICAL \
+#         $DOCKER_REG_URL/$IMAGE_PATH
 
-    - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
-    - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
-    - docker push $DOCKER_REG_URL/$IMAGE_PATH
-    - echo "$DOCKER_REG_URL/$IMAGE_PATH - Push is DONE!";
-  tags:
-    - docker
-  artifacts:
-    when: always
-    paths:
-      - ${IMAGE_SCAN_REPORT}
+#     - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
+#     - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
+#     - docker push $DOCKER_REG_URL/$IMAGE_PATH
+#     - echo "$DOCKER_REG_URL/$IMAGE_PATH - Push is DONE!";
+#   tags:
+#     - docker
+#   artifacts:
+#     when: always
+#     paths:
+#       - ${IMAGE_SCAN_REPORT}
 
 # Upload to DefectDojo
 .defectdojo_upload:
@@ -276,56 +276,33 @@ include:
 
       # 2. Look for an existing Test with exactly that title
     - |
-      echo "🔎 Checking for existing Test titled '${DEFECTDOJO_TEST_TITLE}'..."
-      read -r EXISTING_TITLE EXISTING_ID < <(
-        curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-            "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}" \
-        | jq -r --arg title "$DEFECTDOJO_TEST_TITLE" '
-            .results[]
-            | select(.title == $title)
-            | "\(.title) \(.id)"
-          '
-      )
-      echo "EXISTING_TITLE: $EXISTING_TITLE and DEFECTDOJO_TEST_TITLE: $DEFECTDOJO_TEST_TITLE"
-      if [ "$EXISTING_TITLE" = "$DEFECTDOJO_TEST_TITLE" ]; then
-        echo "✅ Found existing Test (ID=$EXISTING_ID); doing reimport-scan"
-        curl -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
-          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-          -F "test=${EXISTING_ID}" \
-          -F "scan_date=$(date +%F)" \
-          -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
+      test_body=$(api_request \
+      "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}&limit=100" \
+      "GET" "" 200)
+      
+      if [ $(echo "$test_body" | jq -e '.count > 0') ]; then
+        TEST_ID=$(echo "$test_body" | jq -r '.results[0].id')
+        
+        # Sửa phần form data
+        curl -sf -H "Authorization: Token $DEFECTDOJO_API_KEY" \
+          -X POST \
+          -F "test=$TEST_ID" \
+          -F "scan_date=$TODAY" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
-          -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
-          -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
-          -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
-          -F "close_old_findings_product_scope=${DEFECTDOJO_CLOSE_OLD_FINDINGS_PRODUCT_SCOPE}" \
-          -F "file=@${DEFECTDOJO_SCAN_FILE}"
+          -F "file=@${DEFECTDOJO_SCAN_FILE}" \
+          -F "close_old_findings=true" \
+          "${DEFECTDOJO_URL}/api/v2/reimport-scan/" || exit 1
       else
-        echo "⚠️ No existing Test found; doing import-scan"
-        curl -S -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
-          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-          -F "scan_date=$(date +%F)" \
-          -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
+        curl -sf -H "Authorization: Token $DEFECTDOJO_API_KEY" \
+          -X POST \
+          -F "engagement=$ENGAGEMENT_ID" \
+          -F "scan_date=$TODAY" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
-          -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
-          -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
-          -F "product_name=${DEFECTDOJO_PRODUCT_NAME}" \
-          -F "engagement_name=${ENGAGEMENT_NAME}" \
-          -F "engagement=${ENGAGEMENT_ID}" \
-          -F "test_type=${DEFECTDOJO_SCAN_TEST_TYPE}" \
-          -F "auto_create_context=${DEFECTDOJO_AUTO_CREATE_CONTEXT}" \
-          -F "deduplication_on_engagement=${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
-          -F "close_old_findings=false" \
-          -F "close_old_findings_product_scope=${DEFECTDOJO_CLOSE_OLD_FINDINGS_PRODUCT_SCOPE}" \
           -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
           -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-          -F "source_code_management_server=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER}" \
-          -F "description=${CI_COMMIT_DESCRIPTION}" \
-          -F "version=${CI_COMMIT_REF_NAME}" \
-          -F "first_contacted=$(date +%F)"
-      fi
-
-      echo "✅ Upload completed"
+          -F "close_old_findings=false" \
+          "${DEFECTDOJO_URL}/api/v2/import-scan/" || exit 1
+          echo "✅ Upload completed"
   tags:
     - docker
 
