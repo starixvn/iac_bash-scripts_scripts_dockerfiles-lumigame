@@ -274,52 +274,55 @@ include:
      # 1. Ensure report exists
     -  test -f "${DEFECTDOJO_SCAN_FILE}" || { echo "❌ Trivy report not found"; exit 1; }
 
-      # 2. Look for an existing Test with exactly that title
-    - |
-      # Query existing test for this engagement and title
-      TEST_RESPONSE=$(curl -s -w "\n%{http_code}" \
-        -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-        "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}&limit=100")
-      
-      TEST_STATUS=$(echo "$TEST_RESPONSE" | tail -n1)
-      TEST_BODY=$(echo "$TEST_RESPONSE" | sed '$d')
-
-      if [ "$TEST_STATUS" -eq 200 ] && [ "$(echo "$TEST_BODY" | jq '.count')" -ge 1 ]; then
-        TEST_ID=$(echo "$TEST_BODY" | jq -r '.results[0].id')
-        echo "📝 Reimporting scan for existing test ID: ${TEST_ID}"
-        
-        # Reimport scan for existing test
-        REIMPORT_RESPONSE=$(curl -s -w "\n%{http_code}" \
+    - |  
+      echo "🔎 Checking for existing Test titled '${DEFECTDOJO_TEST_TITLE}'..."
+      EXISTING_TITLE=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}" \
+        | jq -r '.results[]
+                   | select(.title=="${DEFECTDOJO_TEST_TITLE}")
+                   | .title')
+      echo "🔎 EXISTING_TITLE ${EXISTING_TITLE} - DEFECTDOJO_TEST_TITLE ${DEFECTDOJO_TEST_TITLE}"
+      if [ "$EXISTING_TITLE" = "${DEFECTDOJO_TEST_TITLE}" ]; then
+        echo "✅ Found existing Test; doing reimport-scan"
+        TEST_ID=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+          "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}" \
+          | jq -r '.results[] | select(.title=="${DEFECTDOJO_TEST_TITLE}") | .id')
+        curl -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
           -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-          -X POST \
           -F "test=${TEST_ID}" \
-          -F "scan_date=${TODAY}" \
+          -F "scan_date=$(date +%F)" \
+          -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
-          -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-          -F "close_old_findings=true" \
-          "${DEFECTDOJO_URL}/api/v2/reimport-scan/")
-
-        REIMPORT_STATUS=$(echo "$REIMPORT_RESPONSE" | tail -n1)
-        [ "$REIMPORT_STATUS" -eq 201 ] || { echo "❌ Failed to reimport scan (HTTP ${REIMPORT_STATUS})"; exit 1; }
-        echo "✅ Scan reimported successfully"
+          -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
+          -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
+          -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
+          -F "close_old_findings_product_scope=${DEFECTDOJO_CLOSE_OLD_FINDINGS_PRODUCT_SCOPE}" \
+          -F "file=@${DEFECTDOJO_SCAN_FILE}"
       else
-        echo "📝 Creating new test and importing scan"
-        # Import new scan
-        IMPORT_RESPONSE=$(curl -s -w "\n%{http_code}" \
+        echo "⚠️ No existing Test found; doing import-scan"
+        curl -S -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
           -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-          -X POST \
-          -F "engagement=${ENGAGEMENT_ID}" \
-          -F "scan_date=${TODAY}" \
+          -F "scan_date=$(date +%F)" \
+          -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
+          -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
+          -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
+          -F "product_name=${DEFECTDOJO_PRODUCT_NAME}" \
+          -F "engagement_name=${ENGAGEMENT_NAME}" \
+          -F "engagement=${ENGAGEMENT_ID}" \
+          -F "test_type=${DEFECTDOJO_SCAN_TEST_TYPE}" \
+          -F "auto_create_context=${DEFECTDOJO_AUTO_CREATE_CONTEXT}" \
+          -F "deduplication_on_engagement=${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
+          -F "close_old_findings=false" \
+          -F "close_old_findings_product_scope=${DEFECTDOJO_CLOSE_OLD_FINDINGS_PRODUCT_SCOPE}" \
           -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
           -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-          -F "close_old_findings=false" \
-          "${DEFECTDOJO_URL}/api/v2/import-scan/")
-
-        IMPORT_STATUS=$(echo "$IMPORT_RESPONSE" | tail -n1)
-        [ "$IMPORT_STATUS" -eq 201 ] || { echo "❌ Failed to import scan (HTTP ${IMPORT_STATUS})"; exit 1; }
-        echo "✅ New scan imported successfully"
+          -F "source_code_management_server=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER}" \
+          -F "description=${CI_COMMIT_DESCRIPTION}" \
+          -F "version=${CI_COMMIT_REF_NAME}" \
+          -F "first_contacted=$(date +%F)"
       fi
+    - echo "✅ Upload completed"
   tags:
     - docker
 
