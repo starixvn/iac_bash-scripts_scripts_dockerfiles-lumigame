@@ -24,6 +24,7 @@ include:
 
 
 
+#Scan Config 
 .test:
   stage: test
   image: $DOCKER_REG_LOCAL_URL/docker-hub/aquasec/trivy:latest
@@ -51,7 +52,7 @@ include:
     paths:
       - ${CONFIG_SCAN_REPORT}
 
-
+# Build → Scan → Push image
 .build:
   stage: build
   script:
