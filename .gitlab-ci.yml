@@ -286,7 +286,7 @@ include:
             | "\(.title) \(.id)"
           '
       )
-
+      echo "EXISTING_TITLE: $EXISTING_TITLE and DEFECTDOJO_TEST_TITLE: $DEFECTDOJO_TEST_TITLE"
       if [ "$EXISTING_TITLE" = "$DEFECTDOJO_TEST_TITLE" ]; then
         echo "✅ Found existing Test (ID=$EXISTING_ID); doing reimport-scan"
         curl -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
