@@ -40,3 +40,4 @@ dotnetcore-60-slim-image-scan-reports:
   needs:
     - job: dotnetcore-60-slim-build
       artifacts: true
+  when: always
