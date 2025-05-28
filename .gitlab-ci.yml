@@ -276,33 +276,50 @@ include:
 
       # 2. Look for an existing Test with exactly that title
     - |
-      test_body=$(api_request \
-      "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}&limit=100" \
-      "GET" "" 200)
+      # Query existing test for this engagement and title
+      TEST_RESPONSE=$(curl -s -w "\n%{http_code}" \
+        -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}&limit=100")
       
-      if [ $(echo "$test_body" | jq -e '.count > 0') ]; then
-        TEST_ID=$(echo "$test_body" | jq -r '.results[0].id')
+      TEST_STATUS=$(echo "$TEST_RESPONSE" | tail -n1)
+      TEST_BODY=$(echo "$TEST_RESPONSE" | sed '$d')
+
+      if [ "$TEST_STATUS" -eq 200 ] && [ "$(echo "$TEST_BODY" | jq '.count')" -ge 1 ]; then
+        TEST_ID=$(echo "$TEST_BODY" | jq -r '.results[0].id')
+        echo "📝 Reimporting scan for existing test ID: ${TEST_ID}"
         
-        # Sửa phần form data
-        curl -sf -H "Authorization: Token $DEFECTDOJO_API_KEY" \
+        # Reimport scan for existing test
+        REIMPORT_RESPONSE=$(curl -s -w "\n%{http_code}" \
+          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
           -X POST \
-          -F "test=$TEST_ID" \
-          -F "scan_date=$TODAY" \
+          -F "test=${TEST_ID}" \
+          -F "scan_date=${TODAY}" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
           -F "file=@${DEFECTDOJO_SCAN_FILE}" \
           -F "close_old_findings=true" \
-          "${DEFECTDOJO_URL}/api/v2/reimport-scan/" || exit 1
+          "${DEFECTDOJO_URL}/api/v2/reimport-scan/")
+
+        REIMPORT_STATUS=$(echo "$REIMPORT_RESPONSE" | tail -n1)
+        [ "$REIMPORT_STATUS" -eq 201 ] || { echo "❌ Failed to reimport scan (HTTP ${REIMPORT_STATUS})"; exit 1; }
+        echo "✅ Scan reimported successfully"
       else
-        curl -sf -H "Authorization: Token $DEFECTDOJO_API_KEY" \
+        echo "📝 Creating new test and importing scan"
+        # Import new scan
+        IMPORT_RESPONSE=$(curl -s -w "\n%{http_code}" \
+          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
           -X POST \
-          -F "engagement=$ENGAGEMENT_ID" \
-          -F "scan_date=$TODAY" \
+          -F "engagement=${ENGAGEMENT_ID}" \
+          -F "scan_date=${TODAY}" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
           -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
           -F "file=@${DEFECTDOJO_SCAN_FILE}" \
           -F "close_old_findings=false" \
-          "${DEFECTDOJO_URL}/api/v2/import-scan/" || exit 1
-          echo "✅ Upload completed"
+          "${DEFECTDOJO_URL}/api/v2/import-scan/")
+
+        IMPORT_STATUS=$(echo "$IMPORT_RESPONSE" | tail -n1)
+        [ "$IMPORT_STATUS" -eq 201 ] || { echo "❌ Failed to import scan (HTTP ${IMPORT_STATUS})"; exit 1; }
+        echo "✅ New scan imported successfully"
+      fi
   tags:
     - docker
 
