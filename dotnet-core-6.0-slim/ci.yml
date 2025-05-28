@@ -29,7 +29,6 @@ dotnetcore-60-slim-config-scan-reports:
       artifacts: true
   when: always
 
-
 dotnetcore-60-slim-image-scan-reports:
   extends: [.defectdojo_upload, .dotnetcore-60-slim]
   variables:
