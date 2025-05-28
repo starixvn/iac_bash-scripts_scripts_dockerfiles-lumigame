@@ -270,34 +270,66 @@ include:
         fi
       fi
 
-
-    - test -f ${DEFECTDOJO_SCAN_FILE} || { echo "❌ Trivy report not found"; exit 1; }
+    - test -f "${DEFECTDOJO_SCAN_FILE}" || { echo "❌ Trivy report not found"; exit 1; }
     - echo "📤 Uploading Trivy scan report to DefectDojo"
     - |
-      # Query existing test for this engagement
+      # Validate required environment variables
+      for var in DEFECTDOJO_API_KEY DEFECTDOJO_URL ENGAGEMENT_ID DEFECTDOJO_TEST_TITLE; do
+        if [ -z "${!var}" ]; then
+          echo "❌ Missing required environment variable: $var"
+          exit 1
+        fi
+      done
+
+      # Query existing test
       TEST_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-        "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}" || { echo "❌ Error: Failed to query test"; exit 1; })
-      TEST_STATUS=$(echo "$TEST_RESPONSE" | tail -n1)
+        "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}")
+      HTTP_STATUS=$(echo "$TEST_RESPONSE" | tail -n1)
       TEST_BODY=$(echo "$TEST_RESPONSE" | sed '$d')
-      
-      # Handle API response
-      if [ "$TEST_STATUS" -eq 200 ] && [ "$(echo "$TEST_BODY" | jq '.count')" -ge 1 ]; then
-        # Test exists - reimport scan
+
+      # Check test query response
+      if [ "$HTTP_STATUS" -ne 200 ]; then
+        echo "❌ Failed to query tests (HTTP $HTTP_STATUS): $TEST_BODY"
+        exit 1
+      fi
+
+      # Determine if test exists
+      if [ "$(echo "$TEST_BODY" | jq '.count')" -ge 1 ]; then
+        # Reimport to existing test
         TEST_ID=$(echo "$TEST_BODY" | jq -r '.results[0].id')
-        echo "📤 Reimporting Trivy scan report to existing test in DefectDojo"
-        UPLOAD_RESPONSE=$(curl -s -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
+        echo "🔁 Reimporting to existing Test ID: $TEST_ID"
+
+        UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
           -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
           -F "test=${TEST_ID}" \
           -F "scan_date=$(date +%F)" \
-          -F "minimum_severity=${DEFECTDOJO_SCAN_MINIMUM_SEVERITY}" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
-          -F "active=${DEFECTDOJO_SCAN_ACTIVE}" \
-          -F "verified=${DEFECTDOJO_SCAN_VERIFIED}" \
-          -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
+          -F "close_old_findings=true" \
           -F "close_old_findings_product_scope=${DEFECTDOJO_CLOSE_OLD_FINDINGS_PRODUCT_SCOPE}" \
-          -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-          -w "\nHTTP Status: %{http_code}\n" \
-          || ECHO_CURL_ERROR=$?)
+          -F "file=@${DEFECTDOJO_SCAN_FILE}")
+
+        UPLOAD_STATUS=$(echo "$UPLOAD_RESPONSE" | tail -n1)
+        UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
+
+        if [ "$UPLOAD_STATUS" -ne 201 ]; then
+          echo "❌ Reimport failed (HTTP $UPLOAD_STATUS): $UPLOAD_BODY"
+          exit 1
+        fi
+
+        echo "✅ Reimport successful. Now updating closed findings to Mitigated..."
+
+        # Fetch closed findings and update to Mitigated
+        CLOSED_FINDINGS=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+          "${DEFECTDOJO_URL}/api/v2/findings/?test=${TEST_ID}&active=false")
+
+        echo "$CLOSED_FINDINGS" | jq -r '.results[].id' | while read -r finding_id; do
+          curl -s -X PATCH "${DEFECTDOJO_URL}/api/v2/findings/${finding_id}/" \
+            -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+            -H "Content-Type: application/json" \
+            --data '{"active": false, "verified": false, "mitigated": true}' || true
+        done
+
+        echo "✅ All closed findings updated to Mitigated."
       else
         # Create new test and import scan
         echo "📤 Importing new Trivy scan report to DefectDojo"
@@ -325,12 +357,23 @@ include:
           -w "\nHTTP Status: %{http_code}\n" \
           || ECHO_CURL_ERROR=$?)
       fi
-    - |
+
+      # Check for upload errors
       if [ -n "$ECHO_CURL_ERROR" ]; then
         echo "❌ Failed to upload report (curl error code: $ECHO_CURL_ERROR)"
         exit 1
       fi
-    - echo "✅ Upload completed"
+
+      # Extract HTTP status from response
+      UPLOAD_STATUS=$(echo "$UPLOAD_RESPONSE" | grep -o 'HTTP Status: [0-9]\+' | cut -d' ' -f3)
+      
+      # Validate upload status
+      if [ "$UPLOAD_STATUS" -ne 201 ]; then
+        echo "❌ Failed to upload report (HTTP Status: $UPLOAD_STATUS)"
+        echo "Response: $UPLOAD_RESPONSE"
+        exit 1
+      fi
+    - echo "✅ Upload completed successfully"
   tags:
     - docker
 
