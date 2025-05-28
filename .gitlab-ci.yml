@@ -270,75 +270,105 @@ include:
         fi
       fi
 
-    - test -f "${DEFECTDOJO_SCAN_FILE}" || { echo "❌ Trivy report not found"; exit 1; }
-    - echo "📤 Uploading Trivy scan report to DefectDojo"
+
+    - test -f ${DEFECTDOJO_SCAN_FILE} || { echo "❌ Trivy report not found"; exit 1; }
+      # ===== Validate environment variables =====
     - |
-      # Validate critical environment variables
-      REQUIRED_VARS=("DEFECTDOJO_API_KEY" "DEFECTDOJO_URL" "ENGAGEMENT_ID" "DEFECTDOJO_TEST_TITLE")
+      # ===== Validate environment variables =====
+      REQUIRED_VARS=(
+        "DEFECTDOJO_API_KEY"
+        "DEFECTDOJO_URL"
+        "ENGAGEMENT_ID"
+        "DEFECTDOJO_TEST_TITLE"
+      )
       for var in "${REQUIRED_VARS[@]}"; do
         if [ -z "${!var}" ]; then
-          echo "❌ Missing required variable: $var"
+          echo "❌ Critical error: Missing required variable '$var'"
           exit 1
         fi
       done
 
-      # Query test by title and engagement
-      TEST_QUERY_URL="${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}"
-      TEST_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Token ${DEFECTDOJO_API_KEY}" "$TEST_QUERY_URL")
-      HTTP_STATUS=$(echo "$TEST_RESPONSE" | tail -n1)
-      TEST_BODY=$(echo "$TEST_RESPONSE" | sed '$d')
+      # ===== Check test existence =====
+      echo "🔍 Checking test existence: $DEFECTDOJO_TEST_TITLE"
+      TEST_QUERY_URL="${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}&title=${DEFECTDOJO_TEST_TITLE}&limit=100"
+      
+      TEST_QUERY_RESPONSE=$(curl -sf -w "\nHTTP_STATUS:%{http_code}" \
+        -H "Authorization: Token $DEFECTDOJO_API_KEY" \
+        "$TEST_QUERY_URL" || { echo "❌ Network error"; exit 1; })
 
-      # Check HTTP status
+      # Parse response
+      HTTP_STATUS=$(echo "$TEST_QUERY_RESPONSE" | awk -F: '/HTTP_STATUS/ {print $2}')
+      RESPONSE_BODY=$(echo "$TEST_QUERY_RESPONSE" | sed '/HTTP_STATUS:/d')
+
+      # Handle HTTP errors
       if [ "$HTTP_STATUS" -ne 200 ]; then
-        echo "❌ Failed to check existing test (HTTP $HTTP_STATUS): $TEST_BODY"
+        echo "❌ API query failed (HTTP $HTTP_STATUS)"
+        echo "Response: ${RESPONSE_BODY:0:500}..."  # Limit output length
         exit 1
       fi
 
-      # Parse JSON response safely
-      if ! jq -e '.count >= 0' <<< "$TEST_BODY" >/dev/null; then
-        echo "❌ Invalid API response format: $TEST_BODY"
+      # Validate JSON structure
+      if ! jq -e '.count >= 0' <<< "$RESPONSE_BODY" >/dev/null; then
+        echo "❌ Invalid API response structure"
         exit 1
       fi
 
-      TEST_COUNT=$(echo "$TEST_BODY" | jq '.count')
-      if [ "$TEST_COUNT" -ge 1 ]; then
-        # Existing test found - use reimport
-        TEST_ID=$(echo "$TEST_BODY" | jq -r '.results[0].id')
-        echo "🔄 Test '$DEFECTDOJO_TEST_TITLE' (ID: $TEST_ID) exists - Reimporting..."
+      TEST_COUNT=$(jq -r '.count' <<< "$RESPONSE_BODY")
+
+      # ===== Main logic =====
+      if [ "$TEST_COUNT" -gt 0 ]; then
+        # --- Existing test: Reimport ---
+        TEST_ID=$(jq -er '.results[0].id' <<< "$RESPONSE_BODY")
+        echo "🔄 Found existing test (ID: $TEST_ID) - Starting reimport..."
         
-        # Execute reimport-scan
-        UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
-          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-          -F "test=${TEST_ID}" \
-          -F "scan_date=$(date +%F)" \
+        # Execute reimport
+        REIMPORT_URL="${DEFECTDOJO_URL}/api/v2/reimport-scan/"
+        REIMPORT_RESPONSE=$(curl -sf -w "\nHTTP_STATUS:%{http_code}" -X POST \
+          -H "Authorization: Token $DEFECTDOJO_API_KEY" \
+          -F "test=$TEST_ID" \
+          -F "scan_date=$(date +%Y-%m-%d)" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
           -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-          -F "close_old_findings=true")
+          -F "close_old_findings=true" \
+          -F "verified=true" \
+          "$REIMPORT_URL" || { echo "❌ Reimport failed"; exit 1; })
+
+        REIMPORT_HTTP_STATUS=$(echo "$REIMPORT_RESPONSE" | awk -F: '/HTTP_STATUS/ {print $2}')
+        if [ "$REIMPORT_HTTP_STATUS" -ne 201 ]; then
+          echo "❌ Reimport error (HTTP $REIMPORT_HTTP_STATUS)"
+          echo "Details: $(echo "$REIMPORT_RESPONSE" | sed '/HTTP_STATUS:/d' | jq -c .)"
+          exit 1
+        fi
+
+        echo "✅ Reimport successful! Processing mitigations..."
       else
-        # Create new test - use import-scan
-        echo "🆕 Test '$DEFECTDOJO_TEST_TITLE' not found - Creating new test..."
+        # --- New test: Import ---
+        echo "🆕 No existing test found - Creating new test..."
         
-        # Execute import-scan
-        UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
-          -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        IMPORT_URL="${DEFECTDOJO_URL}/api/v2/import-scan/"
+        IMPORT_RESPONSE=$(curl -sf -w "\nHTTP_STATUS:%{http_code}" -X POST \
+          -H "Authorization: Token $DEFECTDOJO_API_KEY" \
           -F "engagement=${ENGAGEMENT_ID}" \
-          -F "scan_date=$(date +%F)" \
+          -F "scan_date=$(date +%Y-%m-%d)" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
           -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
           -F "file=@${DEFECTDOJO_SCAN_FILE}" \
-          -F "close_old_findings=false")
-      fi
+          -F "verified=true" \
+          -F "active=true" \
+          -F "close_old_findings=false" \
+          "$IMPORT_URL" || { echo "❌ Import failed"; exit 1; })
 
-      # Check upload result
-      UPLOAD_STATUS=$(echo "$UPLOAD_RESPONSE" | tail -n1)
-      UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
-      
-      if [[ "$UPLOAD_STATUS" != 2* ]]; then
-        echo "❌ Upload failed (HTTP $UPLOAD_STATUS): $UPLOAD_BODY"
-        exit 1
+        IMPORT_HTTP_STATUS=$(echo "$IMPORT_RESPONSE" | awk -F: '/HTTP_STATUS/ {print $2}')
+        if [[ ! "$IMPORT_HTTP_STATUS" =~ ^2 ]]; then
+          echo "❌ Import error (HTTP $IMPORT_HTTP_STATUS)"
+          echo "Details: $(echo "$IMPORT_RESPONSE" | sed '/HTTP_STATUS:/d' | jq -c .)"
+          exit 1
+        fi
+        
+        echo "✅ Import successful! New test created."
       fi
       
-      echo "✅ Upload successful!"
+      echo "🚀 All operations completed successfully!"
   tags:
     - docker
 
