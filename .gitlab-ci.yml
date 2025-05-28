@@ -277,9 +277,10 @@ include:
       # ===== Validate environment variables =====
       REQUIRED_VARS=(
         "DEFECTDOJO_API_KEY"
-        "DEFECTDOJO_URL"
+        "DEFECTDOJO_URL" 
         "ENGAGEMENT_ID"
         "DEFECTDOJO_TEST_TITLE"
+
       )
       for var in "${REQUIRED_VARS[@]}"; do
         if [ -z "${!var}" ]; then
@@ -303,22 +304,22 @@ include:
       # Handle HTTP errors
       if [ "$HTTP_STATUS" -ne 200 ]; then
         echo "❌ API query failed (HTTP $HTTP_STATUS)"
-        echo "Response: ${RESPONSE_BODY:0:500}..."  # Limit output length
+        echo "Response: ${RESPONSE_BODY:0:500}..."
         exit 1
       fi
 
       # Validate JSON structure
-      if ! jq -e '.count >= 0' <<< "$RESPONSE_BODY" >/dev/null; then
+      if ! echo "$RESPONSE_BODY" | jq -e '.count >= 0' >/dev/null 2>&1; then
         echo "❌ Invalid API response structure"
         exit 1
       fi
 
-      TEST_COUNT=$(jq -r '.count' <<< "$RESPONSE_BODY")
+      TEST_COUNT=$(echo "$RESPONSE_BODY" | jq -r '.count')
 
       # ===== Main logic =====
       if [ "$TEST_COUNT" -gt 0 ]; then
         # --- Existing test: Reimport ---
-        TEST_ID=$(jq -er '.results[0].id' <<< "$RESPONSE_BODY")
+        TEST_ID=$(echo "$RESPONSE_BODY" | jq -er '.results[0].id')
         echo "🔄 Found existing test (ID: $TEST_ID) - Starting reimport..."
         
         # Execute reimport
@@ -333,14 +334,14 @@ include:
           -F "verified=true" \
           "$REIMPORT_URL" || { echo "❌ Reimport failed"; exit 1; })
 
-        REIMPORT_HTTP_STATUS=$(echo "$REIMPORT_RESPONSE" | awk -F: '/HTTP_STATUS/ {print $2}')
-        if [ "$REIMPORT_HTTP_STATUS" -ne 201 ]; then
-          echo "❌ Reimport error (HTTP $REIMPORT_HTTP_STATUS)"
+        REIMPORT_STATUS=$(echo "$REIMPORT_RESPONSE" | awk -F: '/HTTP_STATUS/ {print $2}')
+        if [ "$REIMPORT_STATUS" -ne 201 ]; then
+          echo "❌ Reimport error (HTTP $REIMPORT_STATUS)"
           echo "Details: $(echo "$REIMPORT_RESPONSE" | sed '/HTTP_STATUS:/d' | jq -c .)"
           exit 1
         fi
 
-        echo "✅ Reimport successful! Processing mitigations..."
+        echo "✅ Reimport successful!"
       else
         # --- New test: Import ---
         echo "🆕 No existing test found - Creating new test..."
@@ -358,9 +359,9 @@ include:
           -F "close_old_findings=false" \
           "$IMPORT_URL" || { echo "❌ Import failed"; exit 1; })
 
-        IMPORT_HTTP_STATUS=$(echo "$IMPORT_RESPONSE" | awk -F: '/HTTP_STATUS/ {print $2}')
-        if [[ ! "$IMPORT_HTTP_STATUS" =~ ^2 ]]; then
-          echo "❌ Import error (HTTP $IMPORT_HTTP_STATUS)"
+        IMPORT_STATUS=$(echo "$IMPORT_RESPONSE" | awk -F: '/HTTP_STATUS/ {print $2}')
+        if [[ ! "$IMPORT_STATUS" =~ ^2 ]]; then
+          echo "❌ Import error (HTTP $IMPORT_STATUS)"
           echo "Details: $(echo "$IMPORT_RESPONSE" | sed '/HTTP_STATUS:/d' | jq -c .)"
           exit 1
         fi
