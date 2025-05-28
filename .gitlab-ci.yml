@@ -275,14 +275,8 @@ include:
       # ===== Validate environment variables =====
     - |
       # ===== Validate environment variables =====
-      REQUIRED_VARS=(
-        "DEFECTDOJO_API_KEY"
-        "DEFECTDOJO_URL" 
-        "ENGAGEMENT_ID"
-        "DEFECTDOJO_TEST_TITLE"
-
-      )
-      for var in "${REQUIRED_VARS[@]}"; do
+      REQUIRED_VARS="DEFECTDOJO_API_KEY DEFECTDOJO_URL ENGAGEMENT_ID DEFECTDOJO_TEST_TITLE"
+      for var in $REQUIRED_VARS; do
         if [ -z "${!var}" ]; then
           echo "❌ Critical error: Missing required variable '$var'"
           exit 1
