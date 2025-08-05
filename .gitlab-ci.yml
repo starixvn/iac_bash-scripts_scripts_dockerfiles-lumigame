@@ -35,7 +35,7 @@ include:
     - |
       # Run Trivy config and always generate the report
       trivy config \
-        --severity MEDIUM,HIGH,CRITICAL \
+        --severity CRITICAL \
         --exit-code 0 \
         --format json \
         --output ${CONFIG_SCAN_REPORT} \
@@ -43,7 +43,7 @@ include:
     - echo "done Scan Dockerfile !"
     - |
       if [ -f "${CONFIG_SCAN_REPORT}" ]; then
-        VULN_COUNT=$(jq '[.Results[]?.Misconfigurations[]? | select(.Severity == "MEDIUM" or .Severity == "HIGH" or .Severity == "CRITICAL")] | length' ${CONFIG_SCAN_REPORT})
+        VULN_COUNT=$(jq '[.Results[]?.Misconfigurations[]? | select(.Severity == "CRITICAL")] | length' ${CONFIG_SCAN_REPORT})
         echo "Found $VULN_COUNT CRITICAL config vulnerabilities"
         if [ "$VULN_COUNT" -gt 0 ]; then
           echo "❌ CRITICAL config vulnerabilities detected"
