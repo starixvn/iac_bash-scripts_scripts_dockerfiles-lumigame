@@ -3,8 +3,8 @@
   variables:
     RULES_CHANGES_PATH: "dotnet-core-6.0-slim/**/*"
     DIR_PATH: "dotnet-core-6.0-slim"
-    IMAGE_VERSION: "8.0.18-azurelinux3.0-arm64v8"
-    IMAGE_TAG: "8.0.18-azurelinux3.0-arm64v8-testing"
+    IMAGE_VERSION: "8.0.18-azurelinux3.0-arm64v8-testing"
+    IMAGE_TAG: "8.0.18-azurelinux3.0-arm64v8"
     BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:$IMAGE_TAG"
     IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
     # IMAGE_PATH: "base/node:$IMAGE_VERSION"
