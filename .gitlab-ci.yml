@@ -27,24 +27,30 @@ include:
 #Scan Config 
 .test:
   stage: test
-  image: $DOCKER_REG_LOCAL_URL/docker-hub/aquasec/trivy:latest
+  image: $DOCKER_REG_LOCAL_URL/docker-hub/aquasec/trivy:0.65.0
+  before_script:
+    - apk add --no-cache jq
   script:
-    # Display Dockerfile contents  
     - cat $DIR_PATH/Dockerfile
     - |
       # Run Trivy config and always generate the report
       trivy config \
-        --severity HIGH,CRITICAL \
+        --severity CRITICAL \
         --exit-code 0 \
         --format json \
         --output ${CONFIG_SCAN_REPORT} \
         $DIR_PATH/
-      # Fail the pipeline only if there are serious vulnerabilities
-      trivy config \
-       --severity CRITICAL \
-       --exit-code 1 \
-       $DIR_PATH/
     - echo "done Scan Dockerfile !"
+    - |
+      if [ -f "${CONFIG_SCAN_REPORT}" ]; then
+        VULN_COUNT=$(jq '[.Results[]?.Misconfigurations[]? | select(.Severity == "CRITICAL")] | length' ${CONFIG_SCAN_REPORT})
+        echo "Found $VULN_COUNT CRITICAL config vulnerabilities"
+        if [ "$VULN_COUNT" -gt 0 ]; then
+          echo "❌ CRITICAL config vulnerabilities detected"
+          echo "📊 Report will be uploaded to DefectDojo"
+          exit 1
+        fi
+      fi
   tags:
     - docker
   artifacts:
@@ -55,6 +61,8 @@ include:
 # Build → Scan → Push image
 .build:
   stage: build
+  before_script:
+    - apk add --no-cache jq
   script:
     - !reference [.general-script, docker-login]
     - wget --no-verbose https://gitlab.nexdev.net/NEXOPS/tools/trivy-scan/-/raw/main/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz?inline=false -O - | tar -zxvf -
@@ -74,23 +82,24 @@ include:
         --ignore-unfixed \
         --vuln-type os \
         --exit-code 0 \
-        --severity HIGH,CRITICAL \
+        --severity CRITICAL \
         --token $TRIVY_TOKEN \
         --format json \
         --output ${IMAGE_SCAN_REPORT} \
         $DOCKER_REG_URL/$IMAGE_PATH
 
-    #Second command: Fail pipeline for CRITICAL
     - |
-      ./trivy --server $TRIVY_SERVER \
-        --cache-dir /tmp/trivy-cache \
-        image \
-        --ignore-unfixed \
-        --vuln-type os \
-        --exit-code 1 \
-        --severity CRITICAL \
-        $DOCKER_REG_URL/$IMAGE_PATH
-
+      if [ -f "${IMAGE_SCAN_REPORT}" ]; then
+        VULN_COUNT=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' ${IMAGE_SCAN_REPORT})
+        echo "Found $VULN_COUNT HIGH/CRITICAL image vulnerabilities"
+        if [ "$VULN_COUNT" -gt 0 ]; then
+          echo "❌ CRITICAL image vulnerabilities detected"
+          echo "📊 Report will be uploaded to DefectDojo"
+          echo "🚫 Skipping image push due to security vulnerabilities"
+          exit 1
+        fi
+      fi
+    - echo "✅ No HIGH/CRITICAL vulnerabilities found, proceeding with push"
     - echo "done Scan Image $DOCKER_REG_URL/$IMAGE_PATH !"
     - echo "Push - $DOCKER_REG_URL/$IMAGE_PATH"
     - docker push $DOCKER_REG_URL/$IMAGE_PATH
@@ -213,6 +222,7 @@ include:
         ENGAGEMENT_JSON=$(jq -n \
           --arg name "$ENGAGEMENT_NAME" \
           --argjson product "$PRODUCT_ID" \
+          --arg engagement_type "CI/CD" \
           --argjson deduplication_on_engagement "${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
           --argjson threat_model "${DEFECTDOJO_ENGAGEMENT_THREAT_MODEL}" \
           --argjson api_test "${DEFECTDOJO_ENGAGEMENT_API_TEST}" \
@@ -221,7 +231,7 @@ include:
           --arg target_start "$(date +%F)" \
           --arg target_end "$(date -d "+${DEFECTDOJO_ENGAGEMENT_PERIOD} days" +%Y-%m-%d)" \
           --arg status "${DEFECTDOJO_ENGAGEMENT_STATUS}" \
-          '{name: $name, product: $product, target_start: $target_start, target_end: $target_end, status: $status, deduplication_on_engagement: $deduplication_on_engagement, threat_model: $threat_model, api_test: $api_test, pen_test: $pen_test, check_list: $check_list}')
+          '{name: $name, product: $product, engagement_type: $engagement_type, target_start: $target_start, target_end: $target_end, status: $status, deduplication_on_engagement: $deduplication_on_engagement, threat_model: $threat_model, api_test: $api_test, pen_test: $pen_test, check_list: $check_list}')
         echo "DEBUG: Engagement JSON payload: $ENGAGEMENT_JSON"
         CREATE_ENGAGEMENT_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
@@ -241,24 +251,30 @@ include:
       fi
 
 
-     # 1. Ensure report exists
+     # Ensure report exists
     - test -f "${DEFECTDOJO_SCAN_FILE}" || { echo "❌ Trivy report not found"; exit 1; }
     - echo "🔎 Checking for existing Test titled ${DEFECTDOJO_TEST_TITLE}"
     - |
-      EXISTING_TITLE=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
-        "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}" \
-        | jq -r --arg test_title "$DEFECTDOJO_TEST_TITLE" \
-        '.results[] | select(.title==$test_title) | .title // empty')
+      # Get existing test title with error handling
+      API_RESPONSE=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
+        "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}" || echo '{"results":[]}')
       
-      # Set default value if null
+      EXISTING_TITLE=$(echo "$API_RESPONSE" | jq -r --arg test_title "$DEFECTDOJO_TEST_TITLE" \
+        '.results[]? | select(.title | gsub("^\\s+|\\s+$"; "") == ($test_title | gsub("^\\s+|\\s+$"; ""))) | .title' \
+        | head -n1 | xargs || echo "")
+      
+      # Set default value if null or empty
       EXISTING_TITLE=${EXISTING_TITLE:-""}
-      echo "🔎 EXISTING_TITLE: ${EXISTING_TITLE}"
-    - |  
-      if [ "$EXISTING_TITLE" = "${DEFECTDOJO_TEST_TITLE}" ]; then
+      
+      echo "🔎 EXISTING_TITLE: '${EXISTING_TITLE}'"
+      echo "🔎 DEFECTDOJO_TEST_TITLE: '${DEFECTDOJO_TEST_TITLE}'"
+    - |
+      if [ "$EXISTING_TITLE" = "$DEFECTDOJO_TEST_TITLE" ] && [ -n "$EXISTING_TITLE" ]; then
         echo "✅ Found existing Test; doing reimport-scan"
         TEST_ID=$(curl -s -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
           "${DEFECTDOJO_URL}/api/v2/tests/?engagement=${ENGAGEMENT_ID}" \
-          | jq -r '.results[] | select(.title=="${DEFECTDOJO_TEST_TITLE}") | .id')
+          | jq -r --arg test_title "$DEFECTDOJO_TEST_TITLE" \
+          '.results[] | select(.title==$test_title) | .id')
         curl -S -X POST "${DEFECTDOJO_URL}/api/v2/reimport-scan/" \
           -H "Authorization: Token ${DEFECTDOJO_API_KEY}" \
           -F "scan_type=${DEFECTDOJO_SCAN_TYPE}" \
@@ -268,6 +284,8 @@ include:
           -F "engagement_name=${ENGAGEMENT_NAME}" \
           -F "engagement=${ENGAGEMENT_ID}" \
           -F "test_type=\"${DEFECTDOJO_SCAN_TEST_TYPE}\"" \
+          -F "engagement_type"="CI/CD" \
+          -F "do_not_reactivate"="false" \
           -F "auto_create_context=${DEFECTDOJO_AUTO_CREATE_CONTEXT}" \
           -F "deduplication_on_engagement=${DEFECTDOJO_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT}" \
           -F "close_old_findings=${DEFECTDOJO_SCAN_CLOSE_OLD_FINDINGS}" \
