@@ -3,8 +3,8 @@
   variables:
     RULES_CHANGES_PATH: "dotnet-core-alpine/**/*"
     DIR_PATH: "dotnet-core-alpine"
-    IMAGE_VERSION: "8.0-alpine-25h2"
-    BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:8.0-alpine"
+    IMAGE_VERSION: "9.0-alpine-25h2"
+    BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:9.0-alpine"
     IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
 
 dotnet-core-alpine-test:
