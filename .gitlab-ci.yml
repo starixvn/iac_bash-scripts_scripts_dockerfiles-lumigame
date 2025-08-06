@@ -6,10 +6,8 @@ stages:
 ############
 include:
   - local: "base.yml"
-  # - local: "**/ci.yml"
+  - local: "**/ci.yml"
   - local: "/dotnet-core-6.0-slim/ci.yml"
-  # - local: "/vault-snapshot/ci.yml"
-  # - local: "/rsyslog-server/ci.yml"
 
 ###########
 .general-script:
