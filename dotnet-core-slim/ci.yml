@@ -1,0 +1,43 @@
+.dotnetcore:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "dotnet-core/**/*"
+    DIR_PATH: "dotnet-core"
+    IMAGE_VERSION: "9.0-slim-25h2"
+    BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim"
+    IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+dotnetcore-test:
+  extends: [.dotnetcore, .test]
+
+dotnetcore-build:
+  extends: [.dotnetcore, .build]
+  needs: ["dotnetcore-test"]
+
+dotnetcore-config-scan-reports:
+  extends: [.defectdojo_upload, .dotnetcore]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Config Scan "
+  needs:
+    - job: dotnetcore-test
+      artifacts: true
+  when: always
+
+
+dotnetcore-image-scan-reports:
+  extends: [.defectdojo_upload, .dotnetcore]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Image Scan "
+  needs:
+    - job: dotnetcore-build
+      artifacts: true
+  when: always
