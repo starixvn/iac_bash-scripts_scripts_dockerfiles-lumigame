@@ -14,7 +14,6 @@ dotnet-core-alpine-build:
   extends: [.dotnet-core-alpine, .build]
   needs: ["dotnet-core-alpine-test"]
 
-
 dotnet-core-alpine-config-scan-reports:
   extends: [.defectdojo_upload, .dotnet-core-alpine]
   variables:
