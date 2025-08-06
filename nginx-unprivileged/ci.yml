@@ -1,21 +1,21 @@
-.nginx:
+.nginxunprivileged:
   extends: .base-rules
   variables:
-    RULES_CHANGES_PATH: "nginx/**/*"
-    DIR_PATH: "nginx"
+    RULES_CHANGES_PATH: "nginx-unprivileged/**/*"
+    DIR_PATH: "nginx-unprivileged"
     IMAGE_VERSION: "1.27-alpine-25h2"
     BASE_IMAGE: "nginxinc/nginx-unprivileged:1.27-alpine-slim"
     IMAGE_PATH: "base/nginx/nginx-unprivileged:$IMAGE_VERSION"
 
-nginx-test:
-  extends: [.nginx, .test]
+nginxunprivileged-test:
+  extends: [.nginxunprivileged, .test]
 
-nginx-build:
-  extends: [.nginx, .build]
-  needs: ["nginx-test"]
+nginxunprivileged-build:
+  extends: [.nginxunprivileged, .build]
+  needs: ["nginxunprivileged-test"]
 
-nginx-config-scan-reports:
-  extends: [.defectdojo_upload, .nginx]
+nginxunprivileged-config-scan-reports:
+  extends: [.defectdojo_upload, .nginxunprivileged]
   variables:
     ENGAGEMENT_NAME: "$DIR_PATH"
     DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
@@ -23,13 +23,13 @@ nginx-config-scan-reports:
     DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
     DEFECTDOJO_TEST_TITLE: "Dockerfile Scan"
   needs:
-    - job: nginx-test
+    - job: nginxunprivileged-test
       artifacts: true
   when: always
 
 
-nginx-image-scan-reports:
-  extends: [.defectdojo_upload, .nginx]
+nginxunprivileged-image-scan-reports:
+  extends: [.defectdojo_upload, .nginxunprivileged]
   variables:
     ENGAGEMENT_NAME: "$DIR_PATH"
     DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
@@ -37,6 +37,6 @@ nginx-image-scan-reports:
     DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
     DEFECTDOJO_TEST_TITLE: "$IMAGE_PATH - Image Scan "
   needs:
-    - job: nginx-build
+    - job: nginxunprivileged-build
       artifacts: true
   when: always
