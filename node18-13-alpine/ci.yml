@@ -16,3 +16,29 @@ node18-13-alpine-build:
   extends: [.node18-13-alpine, .build]
   needs: ["node18-13-alpine-test"]
 
+node18-13-alpine-config-scan-reports:
+  extends: [.defectdojo_upload, .node18-13-alpine]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Config Scan"
+  needs:
+    - job: node18-13-alpine-test
+      artifacts: true
+  when: always
+
+
+node18-13-alpine-image-scan-reports:
+  extends: [.defectdojo_upload, .node18-13-alpine]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Image Scan"
+  needs:
+    - job: node18-13-alpine-build
+      artifacts: true
+  when: always

@@ -16,3 +16,29 @@ rsyslog-server-build:
   extends: [.rsyslog-server, .build]
   needs: ["rsyslog-server-test"]
 
+rsyslog-server-config-scan-reports:
+  extends: [.defectdojo_upload, .rsyslog-server]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Config Scan"
+  needs:
+    - job: rsyslog-server-test
+      artifacts: true
+  when: always
+
+
+rsyslog-server-image-scan-reports:
+  extends: [.defectdojo_upload, .rsyslog-server]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Image Scan"
+  needs:
+    - job: rsyslog-server-build
+      artifacts: true
+  when: always

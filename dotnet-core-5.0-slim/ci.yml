@@ -16,3 +16,29 @@ dotnetcore-50-slim-build:
   extends: [.dotnetcore-50-slim, .build]
   needs: ["dotnetcore-50-slim-test"]
 
+dotnetcore-50-slim-config-scan-reports:
+  extends: [.defectdojo_upload, .dotnetcore-50-slim]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Config Scan"
+  needs:
+    - job: dotnetcore-50-slim-test
+      artifacts: true
+  when: always
+
+
+dotnetcore-50-slim-image-scan-reports:
+  extends: [.defectdojo_upload, .dotnetcore-50-slim]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Image Scan"
+  needs:
+    - job: dotnetcore-50-slim-build
+      artifacts: true
+  when: always
