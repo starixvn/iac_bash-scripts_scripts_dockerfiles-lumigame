@@ -4,7 +4,7 @@
     RULES_CHANGES_PATH: "nginx-brotli/**/*"
     DIR_PATH: "nginx-brotli"
     IMAGE_VERSION: "1.28-alpine-25h2"
-    BASE_IMAGE: "fholzer/nginx-brotli:1.28.0"
+    BASE_IMAGE: "fholzer/nginx-brotli:v1.28.0"
     IMAGE_PATH: "base/nginx/nginx-brotli:$IMAGE_VERSION"
 
 nginxbrotli-test:
