@@ -9,6 +9,7 @@
     IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
     # IMAGE_PATH: "base/node:$IMAGE_VERSION"
 
+
 dotnetcore-31-slim-test:
   extends: [.dotnetcore-31-slim, .test]
 
