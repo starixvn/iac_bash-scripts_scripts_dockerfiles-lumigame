@@ -13,3 +13,30 @@ dotnetcoresdk-alpine-test:
 dotnetcoresdk-alpine-build:
   extends: [.dotnetcoresdk-alpine, .build]
   needs: ["dotnetcoresdk-alpine-test"]
+
+dotnetcoresdk-alpine-config-scan-reports:
+  extends: [.defectdojo_upload, .dotnetcoresdk-alpine]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "Dockerfile Scan"
+  needs:
+    - job: dotnetcoresdk-alpine-test
+      artifacts: true
+  when: always
+
+
+dotnetcoresdk-alpine-image-scan-reports:
+  extends: [.defectdojo_upload, .dotnetcoresdk-alpine]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$IMAGE_PATH - Image Scan"
+  needs:
+    - job: dotnetcoresdk-alpine-build
+      artifacts: true
+  when: always

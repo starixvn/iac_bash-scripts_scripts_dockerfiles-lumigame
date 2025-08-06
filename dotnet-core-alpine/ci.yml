@@ -21,7 +21,7 @@ dotnet-core-alpine-config-scan-reports:
     DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
     DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
     DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
-    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Config Scan "
+    DEFECTDOJO_TEST_TITLE: "Dockerfile Scan"
   needs:
     - job: dotnet-core-alpine-test
       artifacts: true
@@ -35,7 +35,7 @@ dotnet-core-alpine-image-scan-reports:
     DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
     DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
     DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
-    DEFECTDOJO_TEST_TITLE: "$ENGAGEMENT_NAME - Image Scan "
+    DEFECTDOJO_TEST_TITLE: "$IMAGE_PATH - Image Scan "
   needs:
     - job: dotnet-core-alpine-build
       artifacts: true
