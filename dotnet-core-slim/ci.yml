@@ -1,8 +1,8 @@
 .dotnetcore:
   extends: .base-rules
   variables:
-    RULES_CHANGES_PATH: "dotnet-core/**/*"
-    DIR_PATH: "dotnet-core"
+    RULES_CHANGES_PATH: "dotnet-core-slim/**/*"
+    DIR_PATH: "dotnet-core-slim"
     IMAGE_VERSION: "9.0-slim-25h2"
     BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim"
     IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
