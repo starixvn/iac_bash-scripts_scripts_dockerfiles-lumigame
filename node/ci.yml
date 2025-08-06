@@ -3,8 +3,8 @@
   variables:
     RULES_CHANGES_PATH: "node/**/*"
     DIR_PATH: "node"
-    IMAGE_VERSION: "24-alpine-25h2"
-    BASE_IMAGE: "node:24-alpine"
+    IMAGE_VERSION: "22-alpine-25h2"
+    BASE_IMAGE: "node:22-alpine"
     IMAGE_PATH: "base/node:$IMAGE_VERSION"
 
 node-alpine-test:
