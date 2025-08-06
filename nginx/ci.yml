@@ -3,11 +3,13 @@
   variables:
     RULES_CHANGES_PATH: "nginx/**/*"
     DIR_PATH: "nginx"
-    IMAGE_VERSION: "1.29-alpine-25h2"
+    IMAGE_VERSION: "1.27-alpine-25h2"
     # BASE_IMAGE: "nginx:1.29-alpine-slim"
     BASE_IMAGE: "nginxinc/nginx-unprivileged:1.27-alpine-slim"
     # BASE_IMAGE: "fholzer/nginx-brotli:1.28.0"
-    IMAGE_PATH: "base/nginx:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/nginx:$IMAGE_VERSION"
+    IMAGE_PATH: "base/nginx/nginx-unprivileged:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/nginx:$IMAGE_VERSION"
 
 nginx-test:
   extends: [.nginx, .test]
