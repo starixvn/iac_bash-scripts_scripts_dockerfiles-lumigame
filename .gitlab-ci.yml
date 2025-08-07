@@ -291,8 +291,7 @@ include:
           -F "test_title=${DEFECTDOJO_TEST_TITLE}" \
           -F "file=@${DEFECTDOJO_SCAN_FILE}" \
           -F "source_code_management_server=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER}" \
-          -F "description=$CI_COMMIT_DESCRIPTION" \
-          -F "version=$CI_COMMIT_REF_NAME"
+          -F "description=$CI_COMMIT_DESCRIPTION"
 
       else
         echo "⚠️ No existing Test found; doing import-scan"
@@ -316,7 +315,6 @@ include:
           -F "file=@${DEFECTDOJO_SCAN_FILE}" \
           -F "source_code_management_server=${DEFECTDOJO_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER}" \
           -F "description=${CI_COMMIT_DESCRIPTION}" \
-          -F "version=${CI_COMMIT_REF_NAME}" \
           -F "first_contacted=$(date +%F)"
       fi
     - echo "✅ Upload completed"
