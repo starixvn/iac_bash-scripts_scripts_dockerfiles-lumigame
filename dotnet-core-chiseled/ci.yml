@@ -1,0 +1,43 @@
+.dotnetcorechiseled:
+  extends: .base-rules
+  variables:
+    RULES_CHANGES_PATH: "dotnet-core-chiseled/**/*"
+    DIR_PATH: "dotnet-core-chiseled"
+    IMAGE_VERSION: "10.0-chiseled-25h2"
+    BASE_IMAGE: "mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled"
+    IMAGE_PATH: "base/dotnet/core/aspnet:$IMAGE_VERSION"
+    # IMAGE_PATH: "base/node:$IMAGE_VERSION"
+
+dotnetcorechiseled-test:
+  extends: [.dotnetcorechiseled, .test]
+
+dotnetcorechiseled-build:
+  extends: [.dotnetcorechiseled, .build]
+  needs: ["dotnetcorechiseled-test"]
+
+dotnetcorechiseled-config-scan-reports:
+  extends: [.defectdojo_upload, .dotnetcorechiseled]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$CONFIG_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "Dockerfile Scan"
+  needs:
+    - job: dotnetcorechiseled-test
+      artifacts: true
+  when: always
+
+
+dotnetcorechiseled-image-scan-reports:
+  extends: [.defectdojo_upload, .dotnetcorechiseled]
+  variables:
+    ENGAGEMENT_NAME: "$DIR_PATH"
+    DEFECTDOJO_SCAN_FILE: "$IMAGE_SCAN_REPORT"
+    DEFECTDOJO_SCAN_TYPE: "Trivy Scan"
+    DEFECTDOJO_SCAN_TEST_TYPE: "Trivy Scan"
+    DEFECTDOJO_TEST_TITLE: "$IMAGE_PATH - Image Scan"
+  needs:
+    - job: dotnetcorechiseled-build
+      artifacts: true
+  when: always
